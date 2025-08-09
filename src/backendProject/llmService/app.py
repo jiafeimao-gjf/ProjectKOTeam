@@ -20,10 +20,12 @@ logger = get_logger(__name__)
 app = Flask(__name__)
 
 
-def ollama_stream(prompt):
+def ollama_stream(prompt, target_model):
+    logger.info(f"ollama_stream: {prompt}, model: {target_model}")
     # 调用 ollama 流式生成
-    save_data = {"prompt":prompt,"answer": ""}
-    for chunk in ollama.generate(model="gpt-oss:20b", prompt=prompt, stream=True):
+    save_data = {"prompt": prompt, "answer": ""}
+    for chunk in ollama.generate(model="gemma3n:e4b" if target_model == "gemma3n:e4b" else target_model, prompt=prompt,
+                                 stream=True):
         text = chunk.get("response", "")
         if text:
             logger.info(text)
@@ -42,14 +44,13 @@ def ollama_stream(prompt):
         logger.info("保存成功")
 
 
-
-
 @app.route("/chat")
 def chat():
     # 获取query里面的prompt
     prompt = request.args.get("prompt")
+    model = request.args.get("model")
     return Response(
-        ollama_stream(prompt),
+        ollama_stream(prompt, model),
         mimetype="text/event-stream",  # SSE 必须用这个 MIME
         headers={
             "Cache-Control": "no-cache",

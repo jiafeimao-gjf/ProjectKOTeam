@@ -16,6 +16,15 @@
     <div class="input-area">
       <!-- 问题输入框 -->
       <input v-model="question" placeholder="请输入你的问题..." />
+      <!-- 模型选择下拉框 -->
+      <select v-model="selectedModel">
+        <option value="gpt-oss:20b">gpt-oss:20b</option>
+        <option value="deepseek-r1:8b">deepseek-r1:8b</option>
+        <option value="gemma3n:e4b">gemma3n:e4b</option>
+        <option value="llama3.1:8b">llama3.1:8b</option>
+        <option value="llama2:latest">llama2:latest</option>
+        <option value="gemma2:2b">gemma2:2b</option>
+      </select>
       <!-- 提交按钮，加载时禁用 -->
       <button @click="askQuestion" :disabled="loading">提交</button>
     </div>
@@ -38,6 +47,8 @@ const question = ref('')
 const answer = ref('')
 // 是否正在加载
 const loading = ref(false)
+// 选中的模型
+const selectedModel = ref('gpt-oss:20b')
 // SSE 事件源对象
 let eventSource = null
 
@@ -70,8 +81,10 @@ function askQuestion() {
   if (eventSource) {
     eventSource.close()
   }
-  // 建立新的 SSE 连接，请求后端接口
-  eventSource = new EventSource(`/api/chat?prompt=${encodeURIComponent(question.value)}`)
+  // 建立新的 SSE 连接，请求后端接口，带上模型参数
+  eventSource = new EventSource(
+    `/api/chat?prompt=${encodeURIComponent(question.value)}&model=${encodeURIComponent(selectedModel.value)}`
+  )
   eventSource.onmessage = (event) => {
     try {
       // 解析后端返回的 JSON 数据
@@ -142,20 +155,30 @@ h2 {
 .input-area {
   width: 80vw;               /* 输入区宽度与答案区一致 */
   max-width: 900px;          /* 最大宽度，防止超大屏幕过宽 */
-  display: flex;             /* 横向排列输入框和按钮 */
-  gap: 12px;                 /* 输入框和按钮之间的间距 */
+  display: flex;             /* 横向排列输入框、下拉框和按钮 */
+  gap: 12px;                 /* 输入框、下拉框和按钮之间的间距 */
   align-items: center;       /* 垂直居中 */
   margin-bottom: 48px;       /* 底部留白 */
 }
 
 /* 输入框样式 */
 input {
-  flex: 1;                   /* 输入框自动填满剩余空间 */
+  flex: 2;                   /* 输入框占较大空间 */
   padding: 12px;             /* 内边距，提升输入体验 */
   font-size: 1em;            /* 字体适中 */
   border-radius: 6px;        /* 圆角 */
   border: 1px solid #ccc;    /* 浅灰色边框 */
   background: #f8f8fa;       /* 浅灰背景，区分于内容区 */
+}
+
+/* 模型选择下拉框样式 */
+select {
+  flex: 1;                   /* 下拉框占较小空间 */
+  padding: 12px;
+  font-size: 1em;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f8f8fa;
 }
 
 /* 按钮样式 */
