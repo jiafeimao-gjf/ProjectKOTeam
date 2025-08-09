@@ -80,33 +80,44 @@ function askQuestion() {
   if (eventSource) {
     eventSource.close()
   }
-  // 建立新的 SSE 连接，请求后端接口，带上模型参数
-  eventSource = new EventSource(
-    `/api/chat?prompt=${encodeURIComponent(question.value)}&model=${encodeURIComponent(selectedModel.value)}`
-  )
-  eventSource.onmessage = (event) => {
-    try {
-      // 解析后端返回的 JSON 数据
-      const data = JSON.parse(event.data)
-      if (data.text) {
-        // 流式追加答案内容
-        answer.value += data.text
+  // 使用 fetch 先 POST，获取流式 EventSource 通道
+  fetch('/api/chat_start', {
+    method: 'post',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: question.value,
+      model: selectedModel.value
+    })
+  }).then(res => {
+    if (!res.ok) throw new Error('接口请求失败')
+    // 假设后端返回一个流式通道地址
+    return res.text()
+  }).then((streamUrl) => {
+    eventSource = new EventSource(streamUrl)
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.text) {
+          answer.value += data.text
+        }
+      } catch (e) {
+        answer.value += event.data
       }
-    } catch (e) {
-      // 非 JSON 格式直接追加
-      answer.value += event.data
     }
-  }
-  eventSource.onerror = () => {
+    eventSource.onerror = () => {
+      loading.value = false
+      eventSource.close()
+    }
+    eventSource.onopen = () => {
+      loading.value = true
+    }
+    eventSource.addEventListener('end', () => {
+      loading.value = false
+      eventSource.close()
+    })
+  }).catch(() => {
     loading.value = false
-    eventSource.close()
-  }
-  eventSource.onopen = () => {
-    loading.value = true
-  }
-  eventSource.addEventListener('end', () => {
-    loading.value = false
-    eventSource.close()
+    answer.value = '接口调用失败，请稍后重试。'
   })
 }
 

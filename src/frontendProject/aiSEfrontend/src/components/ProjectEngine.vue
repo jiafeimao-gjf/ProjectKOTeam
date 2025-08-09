@@ -4,18 +4,11 @@
     <div class="input-area">
       <input v-model="projectDesc" placeholder="请输入项目需求描述..." />
       <!-- 模型选择下拉框，始终可见所有模型 -->
-    <select v-model="selectedModel" class="model-select">
-      <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
-    </select>
+      <select v-model="selectedModel" class="model-select">
+        <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+      </select>
       <!-- 步数输入框，默认5步，支持手动输入 -->
-      <input
-        type="number"
-        min="1"
-        max="1000"
-        v-model.number="stepCount"
-        placeholder="链式步数(默认5)"
-        style="width:100px;"
-      />
+      <input type="number" min="1" max="1000" v-model.number="stepCount" placeholder="链式步数(默认5)" style="width:100px;" />
       <button @click="startChain" :disabled="loading || !projectDesc">开始链式分析</button>
     </div>
     <div class="chain-result">
@@ -81,68 +74,97 @@ async function startChain() {
     let answerBuffer = ''
     // 使用 EventSource 流式获取答案
     await new Promise((resolve) => {
-      const eventSource = new EventSource(`/api/chat?prompt=${encodeURIComponent(prompt)}&model=${encodeURIComponent(selectedModel.value)}`)
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          if (data.text) {
-            answerBuffer += data.text
-            // 实时渲染 markdown
-            const answerMd = marked.parse(answerBuffer)
-            if (chainNodes.value[i]) {
-              chainNodes.value[i].answer = answerMd
-            } else {
-              chainNodes.value.push({ answer: answerMd })
+      // 使用 fetch 先 POST，获取流式 EventSource 通道
+      fetch('/api/chat_start', {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: encodeURIComponent(prompt),
+          model: encodeURIComponent(selectedModel.value)
+        })
+      }).then(res => {
+        if (!res.ok) throw new Error('接口请求失败')
+        // 假设后端返回一个流式通道地址
+        return res.text()
+      }).then((streamUrl) => {
+        const eventSource = new EventSource(streamUrl)
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data.text) {
+              answerBuffer += data.text
+              // 实时渲染 markdown
+              const answerMd = marked.parse(answerBuffer)
+              if (chainNodes.value[i]) {
+                chainNodes.value[i].answer = answerMd
+              } else {
+                chainNodes.value.push({ answer: answerMd })
+              }
+              nextTick(() => {
+                document.querySelectorAll('.chain-node pre code').forEach(block => hljs.highlightElement(block))
+              })
             }
-            nextTick(() => {
-              document.querySelectorAll('.chain-node pre code').forEach(block => hljs.highlightElement(block))
-            })
+          } catch (e) {
+            answerBuffer += event.data
           }
-        } catch (e) {
-          answerBuffer += event.data
         }
-      }
-      eventSource.onerror = () => {
-        eventSource.close()
-        resolve()
-      }
-      eventSource.addEventListener('end', () => {
-        eventSource.close()
-        resolve()
+        eventSource.onerror = () => {
+          eventSource.close()
+          resolve()
+        }
+        eventSource.addEventListener('end', () => {
+          eventSource.close()
+          resolve()
+        })
       })
     })
     // 要求大模型浓缩总结一下答案，不超过100字
     let summaryBuffer = ''
     await new Promise((resolve) => {
       const summaryPrompt = `请用不超过100字浓缩总结上面的内容。`
-      const eventSource = new EventSource(`/api/chat?prompt=${encodeURIComponent(answerBuffer + '\n' + summaryPrompt)}&model=${encodeURIComponent(selectedModel.value)}`)
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          if (data.text) {
-            summaryBuffer += data.text
-            // 实时渲染 markdown
-            const summaryMd = marked.parse('**总结：**' + summaryBuffer)
-            if (chainNodes.value[i]) {
-              chainNodes.value[i].summary = summaryMd
-            } else {
-              chainNodes.value.push({ summary: summaryMd })
+
+      // 使用 fetch 先 POST，获取流式 EventSource 通道
+      fetch('/api/chat_start', {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: encodeURIComponent(answerBuffer + '\n' + summaryPrompt),
+          model: encodeURIComponent(selectedModel.value)
+        })
+      }).then(res => {
+        if (!res.ok) throw new Error('接口请求失败')
+        // 假设后端返回一个流式通道地址
+        return res.text()
+      }).then((streamUrl) => {
+        const eventSource = new EventSource(streamUrl)
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data.text) {
+              summaryBuffer += data.text
+              // 实时渲染 markdown
+              const summaryMd = marked.parse('**总结：** \n' + summaryBuffer)
+              if (chainNodes.value[i]) {
+                chainNodes.value[i].summary = summaryMd
+              } else {
+                chainNodes.value.push({ summary: summaryMd })
+              }
+              nextTick(() => {
+                document.querySelectorAll('.chain-node pre code').forEach(block => hljs.highlightElement(block))
+              })
             }
-            nextTick(() => {
-              document.querySelectorAll('.chain-node pre code').forEach(block => hljs.highlightElement(block))
-            })
+          } catch (e) {
+            summaryBuffer += event.data
           }
-        } catch (e) {
-          summaryBuffer += event.data
         }
-      }
-      eventSource.onerror = () => {
-        eventSource.close()
-        resolve()
-      }
-      eventSource.addEventListener('end', () => {
-        eventSource.close()
-        resolve()
+        eventSource.onerror = () => {
+          eventSource.close()
+          resolve()
+        }
+        eventSource.addEventListener('end', () => {
+          eventSource.close()
+          resolve()
+        })
       })
     })
     // 下一步的 prompt 加上上一步的答案
@@ -166,6 +188,7 @@ async function startChain() {
   align-items: center;
   background: #f4f6fb;
 }
+
 .input-area {
   width: 80vw;
   max-width: 900px;
@@ -174,7 +197,9 @@ async function startChain() {
   align-items: center;
   margin: 32px 0;
 }
-input, .model-select {
+
+input,
+.model-select {
   flex: 1;
   padding: 12px;
   font-size: 1em;
@@ -182,6 +207,7 @@ input, .model-select {
   border: 1px solid #ccc;
   background: #f8f8fa;
 }
+
 button {
   padding: 12px 24px;
   font-size: 1em;
@@ -192,19 +218,22 @@ button {
   cursor: pointer;
   transition: background 0.2s;
 }
+
 button:disabled {
   background: #b0c4e6;
   cursor: not-allowed;
 }
+
 .chain-result {
   width: 80vw;
   max-width: 900px;
   margin-bottom: 48px;
 }
+
 .chain-node {
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 20px;
   margin-bottom: 20px;
 }

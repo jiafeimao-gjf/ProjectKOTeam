@@ -2,6 +2,7 @@
 import logging
 import os
 import time
+import urllib
 import uuid
 
 import ollama
@@ -24,6 +25,7 @@ app = Flask(__name__)
 # 获取格式化时间 2025-08-09 23:59:59
 current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
+
 
 def ollama_stream(prompt, target_model, postfix):
     logger.info(f"ollama_stream: {prompt}, model: {target_model}")
@@ -51,15 +53,43 @@ def ollama_stream(prompt, target_model, postfix):
         logger.info("保存成功")
 
 
-@app.route("/chat")
-def chat():
-    # 获取query里面的prompt
-    prompt = request.args.get("prompt")
+# POST 请求
+body_dict = {}
+
+
+@app.route("/chat_start", methods=["POST"])
+def chat_start():
+    # 获取body里面的prompt
+    prompt = request.json.get("prompt")
     if not prompt:
         return "prompt is empty"
-    model = request.args.get("model")
+    model = request.json.get("model")
     if not model:
         return "model is empty"
+    global body_dict
+
+    uuid_key = str(uuid.uuid4())
+    body_dict[uuid_key] = {"prompt": prompt, "model": model}
+    return f"/api/chat?uuid={uuid_key}"
+
+
+@app.get("/chat")
+def chat():
+    global body_dict
+    body = body_dict.get(request.args.get("uuid"))
+    if not body:
+        return "body is empty"
+    # 获取body里面的prompt
+    prompt = body.get("prompt")
+    if not prompt:
+        return "prompt is empty"
+    model = body.get("model")
+    if not model:
+        return "model is empty"
+    # 解码%XX
+    prompt = urllib.parse.unquote(prompt)
+    model = urllib.parse.unquote(model)
+    logger.info(f"prompt: {prompt}, model: {model}")
 
     global current_time
     global postfix
@@ -81,7 +111,7 @@ def chat():
     )
 
 
-@app.route("/models")
+@app.get("/models")
 def models():
     models = ollama.list()
     response = {"models": []}
