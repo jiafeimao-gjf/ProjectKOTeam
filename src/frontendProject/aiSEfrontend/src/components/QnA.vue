@@ -2,15 +2,14 @@
   <div class="qna-page">
     <h2>外包开发助手</h2>
     <div>
-      <p>项目管理、产品设计、需求设计、技术方案、测试方案一应俱全！</p>
+      <p>项目管理、产品设计、需求设计、技术方案一应俱全！</p>
     </div>
     <div>
       <h3>您的问题：{{ question }}</h3>
     </div>
-    <div class="answer">
+    <div class="answer" id="md">
       <span v-if="loading">正在生成答案...</span>
-      <!-- 使用 key 强制刷新 v-html，保证流式渲染 -->
-      <div v-else v-html="renderedAnswer" :key="answer"></div>
+      <div v-html="renderedAnswer"></div>
     </div>
     <div class="input-area">
       <input v-model="question" placeholder="请输入你的问题..." />
@@ -20,19 +19,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css' // 可选其他主题
+import 'highlight.js/styles/github.css'
 
 const question = ref('')
 const answer = ref('')
 const loading = ref(false)
 let eventSource = null
 
-// 配置 marked 支持代码高亮
 marked.setOptions({
-  highlight: function(code, lang) {
+  highlight: function (code, lang) {
     if (lang && hljs.getLanguage(lang)) {
       return hljs.highlight(code, { language: lang }).value
     }
@@ -40,8 +38,12 @@ marked.setOptions({
   }
 })
 
-// 每次 answer 变化都重新渲染 markdown，保证流式输出
 const renderedAnswer = computed(() => marked.parse(answer.value))
+
+watch(renderedAnswer, async () => {
+  await nextTick()
+  document.querySelectorAll('#md pre code').forEach(block => hljs.highlightElement(block))
+})
 
 function askQuestion() {
   answer.value = ''
@@ -86,6 +88,7 @@ function askQuestion() {
   align-items: center;
   background: #f4f6fb;
 }
+
 h2 {
   margin-top: 48px;
   margin-bottom: 24px;
@@ -93,6 +96,7 @@ h2 {
   font-weight: 600;
   color: #333;
 }
+
 .answer {
   width: 80vw;
   flex: 1;
@@ -104,9 +108,10 @@ h2 {
   padding: 24px;
   border-radius: 8px;
   box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow-y: auto;
 }
+
 .input-area {
   width: 80vw;
   max-width: 900px;
@@ -115,6 +120,7 @@ h2 {
   align-items: center;
   margin-bottom: 48px;
 }
+
 input {
   flex: 1;
   padding: 12px;
@@ -123,6 +129,7 @@ input {
   border: 1px solid #ccc;
   background: #f8f8fa;
 }
+
 button {
   padding: 12px 24px;
   font-size: 1em;
@@ -133,6 +140,7 @@ button {
   cursor: pointer;
   transition: background 0.2s;
 }
+
 button:disabled {
   background: #b0c4e6;
   cursor: not-allowed;
