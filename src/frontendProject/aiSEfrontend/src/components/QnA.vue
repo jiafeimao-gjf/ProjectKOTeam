@@ -13,7 +13,7 @@
     <div class="input-area">
       <!-- 问题输入框 -->
       <input v-model="question" placeholder="请输入你的问题..." />
-      <!-- 模型选择输入框，支持手动输入和下拉选择 -->
+      <!-- 模型选择输入框，支持手动输入和下拉选择，列表由接口获取 -->
       <input
         list="models"
         v-model="selectedModel"
@@ -21,14 +21,7 @@
         class="model-select"
       />
       <datalist id="models">
-        <option value="gpt-oss:20b">gpt-oss:20b</option>
-        <option value="deepseek-r1:8b">deepseek-r1:8b</option>
-        <option value="gemma3n:e4b">gemma3n:e4b</option>
-        <option value="llama3.1:8b">llama3.1:8b</option>
-        <option value="llama2:latest">llama2:latest</option>
-        <option value="gemma2:2b">gemma2:2b</option>
-        <option value="gemma3:27b">gemma3:27b</option>
-        
+        <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
       </datalist>
       <!-- 提交按钮，加载时禁用 -->
       <button @click="askQuestion" :disabled="loading">提交</button>
@@ -38,7 +31,7 @@
 
 <script setup>
 // Vue 响应式 API
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 // markdown 解析库
 import { marked } from 'marked'
 // 代码高亮库
@@ -53,7 +46,9 @@ const answer = ref('')
 // 是否正在加载
 const loading = ref(false)
 // 选中的模型，支持手动输入
-const selectedModel = ref('gpt-oss:20b')
+const selectedModel = ref('')
+const modelList = ref([]) // 模型列表
+
 // SSE 事件源对象
 let eventSource = null
 
@@ -82,6 +77,11 @@ watch(renderedAnswer, async () => {
 function askQuestion() {
   answer.value = ''
   loading.value = true
+  if (!question.value.trim()) {
+    alert('不允许空问题，请输入详细的问题哦！')
+    loading.value = false
+    return
+  }
   // 关闭旧的 SSE 连接
   if (eventSource) {
     eventSource.close()
@@ -115,6 +115,32 @@ function askQuestion() {
     eventSource.close()
   })
 }
+
+// 页面初始化时获取模型列表
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/models')
+    const data = await res.json()
+    modelList.value = data.models || []
+    // 默认选中第一个模型
+    if (modelList.value.length > 0) {
+      selectedModel.value = modelList.value[0]
+    }
+  } catch (e) {
+    // 如果接口异常，使用默认模型列表
+    modelList.value = [
+      'gpt-oss:20b',
+      'deepseek-r1:8b',
+      'deepseek-r1:32b',
+      'gemma3n:e4b',
+      'llama3.1:8b',
+      'llama2:latest',
+      'gemma2:2b',
+      'gemma3:27b'
+    ]
+    selectedModel.value = modelList.value[0]
+  }
+})
 </script>
 
 <style scoped>

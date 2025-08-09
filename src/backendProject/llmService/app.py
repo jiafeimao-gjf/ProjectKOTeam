@@ -48,7 +48,11 @@ def ollama_stream(prompt, target_model):
 def chat():
     # 获取query里面的prompt
     prompt = request.args.get("prompt")
+    if not prompt:
+        return "prompt is empty"
     model = request.args.get("model")
+    if not model:
+        return "model is empty"
     return Response(
         ollama_stream(prompt, model),
         mimetype="text/event-stream",  # SSE 必须用这个 MIME
@@ -58,6 +62,16 @@ def chat():
             "X-Accel-Buffering": "no"  # 关闭 Nginx 等的缓冲
         }
     )
+
+
+@app.route("/models")
+def models():
+    models = ollama.list()
+    response = {"models":[]}
+    for model in models.models:
+        logger.info(model.model)
+        response["models"].append(model.model)
+    return response
 
 
 if __name__ == "__main__":
