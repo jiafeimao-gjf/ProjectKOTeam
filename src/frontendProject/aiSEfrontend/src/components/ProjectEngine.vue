@@ -3,15 +3,10 @@
     <h2>项目需求链式分析</h2>
     <div class="input-area">
       <input v-model="projectDesc" placeholder="请输入项目需求描述..." />
-      <input
-        list="models"
-        v-model="selectedModel"
-        placeholder="选择或输入模型"
-        class="model-select"
-      />
-      <datalist id="models">
-        <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
-      </datalist>
+      <!-- 模型选择下拉框，始终可见所有模型 -->
+    <select v-model="selectedModel" class="model-select">
+      <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+    </select>
       <!-- 步数输入框，默认5步，支持手动输入 -->
       <input
         type="number"
@@ -81,7 +76,7 @@ marked.setOptions({
 async function startChain() {
   chainNodes.value = []
   loading.value = true
-  let prompt = projectDesc.value + '\n中文回答，字数不多与1000个字，思考应该分为几个步骤完成这个项目的demo？\n'
+  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字，思考应该分为几个步骤完成这个项目的demo？\n'
   for (let i = 0; i < stepCount.value; i++) {
     let answerBuffer = ''
     // 使用 EventSource 流式获取答案
@@ -151,7 +146,7 @@ async function startChain() {
       })
     })
     // 下一步的 prompt 加上上一步的答案
-    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于1000个字，下一步做什么？怎么做？【要避免答案重叠或者重复】！！！\n'
+    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于5000个字，保证整体步骤思路目标一致，思考下一步：是要写代码还是出方案？按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出为空的答案。\n'
     // 如果本步没有内容，提前结束
     if (!answerBuffer) break
   }

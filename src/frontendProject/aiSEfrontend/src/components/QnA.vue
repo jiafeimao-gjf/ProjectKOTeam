@@ -13,16 +13,10 @@
     <div class="input-area">
       <!-- 问题输入框 -->
       <input v-model="question" placeholder="请输入你的问题..." />
-      <!-- 模型选择输入框，支持手动输入和下拉选择，列表由接口获取 -->
-      <input
-        list="models"
-        v-model="selectedModel"
-        placeholder="选择或输入模型"
-        class="model-select"
-      />
-      <datalist id="models">
+      <!-- 模型选择下拉框，始终可见所有模型 -->
+      <select v-model="selectedModel" class="model-select">
         <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
-      </datalist>
+      </select>
       <!-- 提交按钮，加载时禁用 -->
       <button @click="askQuestion" :disabled="loading">提交</button>
     </div>
@@ -124,7 +118,7 @@ onMounted(async () => {
     modelList.value = data.models || []
     // 默认选中第一个模型
     if (modelList.value.length > 0) {
-      selectedModel.value = modelList.value[0]
+      selectedModel.value = modelList.value[6]
     }
   } catch (e) {
     // 如果接口异常，使用默认模型列表
