@@ -1,5 +1,6 @@
 # app.py
 import logging
+import uuid
 
 import ollama
 
@@ -32,7 +33,8 @@ def ollama_stream(prompt):
     # 告诉前端结束
     yield "data: [DONE]\n\n"
     # 保存到history 下面
-    with open(f"history_{prompt}.md", "a") as f:
+    random_id = str(uuid.uuid4())
+    with open(f"history_{random_id}.md", "a") as f:
         logger.info("保存数据")
 
         f.write(f"# prompt: {save_data['prompt']}\n")
