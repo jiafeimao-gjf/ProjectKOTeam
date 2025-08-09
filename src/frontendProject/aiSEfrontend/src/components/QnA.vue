@@ -1,9 +1,6 @@
 <template>
   <div class="qna-page">
-    <h2>外包开发助手</h2>
-    <div>
-      <p>项目管理、产品设计、需求设计、技术方案一应俱全！</p>
-    </div>
+    <h2>本地agent助手</h2>
     <div>
       <h3>您的问题：{{ question }}</h3>
     </div>
@@ -16,15 +13,23 @@
     <div class="input-area">
       <!-- 问题输入框 -->
       <input v-model="question" placeholder="请输入你的问题..." />
-      <!-- 模型选择下拉框 -->
-      <select v-model="selectedModel">
+      <!-- 模型选择输入框，支持手动输入和下拉选择 -->
+      <input
+        list="models"
+        v-model="selectedModel"
+        placeholder="选择或输入模型"
+        class="model-select"
+      />
+      <datalist id="models">
         <option value="gpt-oss:20b">gpt-oss:20b</option>
         <option value="deepseek-r1:8b">deepseek-r1:8b</option>
         <option value="gemma3n:e4b">gemma3n:e4b</option>
         <option value="llama3.1:8b">llama3.1:8b</option>
         <option value="llama2:latest">llama2:latest</option>
         <option value="gemma2:2b">gemma2:2b</option>
-      </select>
+        <option value="gemma3:27b">gemma3:27b</option>
+        
+      </datalist>
       <!-- 提交按钮，加载时禁用 -->
       <button @click="askQuestion" :disabled="loading">提交</button>
     </div>
@@ -47,7 +52,7 @@ const question = ref('')
 const answer = ref('')
 // 是否正在加载
 const loading = ref(false)
-// 选中的模型
+// 选中的模型，支持手动输入
 const selectedModel = ref('gpt-oss:20b')
 // SSE 事件源对象
 let eventSource = null
@@ -171,14 +176,20 @@ input {
   background: #f8f8fa;       /* 浅灰背景，区分于内容区 */
 }
 
-/* 模型选择下拉框样式 */
-select {
+/* 模型选择输入框样式 */
+.model-select {
   flex: 1;                   /* 下拉框占较小空间 */
   padding: 12px;
   font-size: 1em;
   border-radius: 6px;
   border: 1px solid #ccc;
   background: #f8f8fa;
+}
+
+/* 移除 datalist 下拉箭头样式 */
+.model-select::-webkit-calendar-picker-indicator {
+  opacity: 0.6;             /* 使下拉箭头略微透明 */
+  cursor: pointer;          /* 鼠标悬停变为手型 */
 }
 
 /* 按钮样式 */
