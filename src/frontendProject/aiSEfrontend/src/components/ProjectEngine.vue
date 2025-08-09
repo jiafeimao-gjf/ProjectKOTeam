@@ -1,0 +1,216 @@
+<template>
+  <div class="project-engine">
+    <h2>项目需求链式分析</h2>
+    <div class="input-area">
+      <input v-model="projectDesc" placeholder="请输入项目需求描述..." />
+      <input
+        list="models"
+        v-model="selectedModel"
+        placeholder="选择或输入模型"
+        class="model-select"
+      />
+      <datalist id="models">
+        <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+      </datalist>
+      <!-- 步数输入框，默认5步，支持手动输入 -->
+      <input
+        type="number"
+        min="1"
+        max="1000"
+        v-model.number="stepCount"
+        placeholder="链式步数(默认5)"
+        style="width:100px;"
+      />
+      <button @click="startChain" :disabled="loading || !projectDesc">开始链式分析</button>
+    </div>
+    <div class="chain-result">
+      <div v-for="(node, idx) in chainNodes" :key="idx" class="chain-node">
+        <h3>第{{ idx + 1 }}步</h3>
+        <div v-html="node.answer"></div>
+        <div v-if="node.summary" v-html="node.summary" style="margin-top:12px;color:#4f8cff;"></div>
+      </div>
+      <span v-if="loading">正在链式分析...</span>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, nextTick } from 'vue'
+import { marked } from 'marked'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
+
+const projectDesc = ref('')
+const selectedModel = ref('')
+const modelList = ref([])
+const chainNodes = ref([])
+const loading = ref(false)
+const stepCount = ref(5) // 步数，默认5步
+
+// 初始化模型列表
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/models')
+    const data = await res.json()
+    modelList.value = data.models || []
+    if (modelList.value.length > 0) selectedModel.value = modelList.value[6]
+  } catch {
+    modelList.value = [
+      'gpt-oss:20b',
+      'deepseek-r1:8b',
+      'gemma3n:e4b',
+      'llama3.1:8b',
+      'llama2:latest',
+      'gemma2:2b'
+    ]
+    selectedModel.value = modelList.value[0]
+  }
+})
+
+// marked 配置代码高亮
+marked.setOptions({
+  highlight: function (code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value
+    }
+    return hljs.highlightAuto(code).value
+  }
+})
+
+// 链式调用接口，每步都把之前的答案附加到问题内容，流式返回
+async function startChain() {
+  chainNodes.value = []
+  loading.value = true
+  let prompt = projectDesc.value + '\n中文回答，字数不多与1000个字，思考应该分为几个步骤完成这个项目的demo？\n'
+  for (let i = 0; i < stepCount.value; i++) {
+    let answerBuffer = ''
+    // 使用 EventSource 流式获取答案
+    await new Promise((resolve) => {
+      const eventSource = new EventSource(`/api/chat?prompt=${encodeURIComponent(prompt)}&model=${encodeURIComponent(selectedModel.value)}`)
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.text) {
+            answerBuffer += data.text
+            // 实时渲染 markdown
+            const answerMd = marked.parse(answerBuffer)
+            if (chainNodes.value[i]) {
+              chainNodes.value[i].answer = answerMd
+            } else {
+              chainNodes.value.push({ answer: answerMd })
+            }
+            nextTick(() => {
+              document.querySelectorAll('.chain-node pre code').forEach(block => hljs.highlightElement(block))
+            })
+          }
+        } catch (e) {
+          answerBuffer += event.data
+        }
+      }
+      eventSource.onerror = () => {
+        eventSource.close()
+        resolve()
+      }
+      eventSource.addEventListener('end', () => {
+        eventSource.close()
+        resolve()
+      })
+    })
+    // 要求大模型浓缩总结一下答案，不超过100字
+    let summaryBuffer = ''
+    await new Promise((resolve) => {
+      const summaryPrompt = `请用不超过100字浓缩总结上面的内容。`
+      const eventSource = new EventSource(`/api/chat?prompt=${encodeURIComponent(answerBuffer + '\n' + summaryPrompt)}&model=${encodeURIComponent(selectedModel.value)}`)
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.text) {
+            summaryBuffer += data.text
+            // 实时渲染 markdown
+            const summaryMd = marked.parse('**总结：**' + summaryBuffer)
+            if (chainNodes.value[i]) {
+              chainNodes.value[i].summary = summaryMd
+            } else {
+              chainNodes.value.push({ summary: summaryMd })
+            }
+            nextTick(() => {
+              document.querySelectorAll('.chain-node pre code').forEach(block => hljs.highlightElement(block))
+            })
+          }
+        } catch (e) {
+          summaryBuffer += event.data
+        }
+      }
+      eventSource.onerror = () => {
+        eventSource.close()
+        resolve()
+      }
+      eventSource.addEventListener('end', () => {
+        eventSource.close()
+        resolve()
+      })
+    })
+    // 下一步的 prompt 加上上一步的答案
+    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于1000个字，下一步做什么？怎么做？【要避免答案重叠或者重复】！！！\n'
+    // 如果本步没有内容，提前结束
+    if (!answerBuffer) break
+  }
+  loading.value = false
+}
+</script>
+
+<style scoped>
+.project-engine {
+  min-height: 100vh;
+  width: 100vw;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f4f6fb;
+}
+.input-area {
+  width: 80vw;
+  max-width: 900px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 32px 0;
+}
+input, .model-select {
+  flex: 1;
+  padding: 12px;
+  font-size: 1em;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f8f8fa;
+}
+button {
+  padding: 12px 24px;
+  font-size: 1em;
+  border-radius: 6px;
+  border: none;
+  background: #4f8cff;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:disabled {
+  background: #b0c4e6;
+  cursor: not-allowed;
+}
+.chain-result {
+  width: 80vw;
+  max-width: 900px;
+  margin-bottom: 48px;
+}
+.chain-node {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+</style>

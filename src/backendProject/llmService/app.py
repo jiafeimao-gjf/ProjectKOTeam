@@ -1,5 +1,7 @@
 # app.py
 import logging
+import os
+import time
 import uuid
 
 import ollama
@@ -19,8 +21,11 @@ logger = get_logger(__name__)
 
 app = Flask(__name__)
 
+# 获取格式化时间 2025-08-09 23:59:59
+current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
-def ollama_stream(prompt, target_model):
+def ollama_stream(prompt, target_model, postfix):
     logger.info(f"ollama_stream: {prompt}, model: {target_model}")
     # 调用 ollama 流式生成
     save_data = {"prompt": prompt, "answer": ""}
@@ -36,7 +41,9 @@ def ollama_stream(prompt, target_model):
     yield "data: [DONE]\n\n"
     # 保存到history 下面
     random_id = str(uuid.uuid4())
-    with open(f"history_{random_id}.md", "a") as f:
+    if not os.path.exists(f"history/history_{postfix}"):
+        os.mkdir(f"history/history_{postfix}")
+    with open(f"history/history_{postfix}/history_{random_id}.md", "a") as f:
         logger.info("保存数据")
 
         f.write(f"# prompt: {save_data['prompt']}\n")
@@ -53,8 +60,16 @@ def chat():
     model = request.args.get("model")
     if not model:
         return "model is empty"
+
+    global current_time
+    global postfix
+    # current_time 时间距离当前时间超过5分钟，更新 current_time
+    if time.time() - time.mktime(time.strptime(current_time, "%Y-%m-%d %H:%M:%S")) > 300:
+        postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
+    current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
     return Response(
-        ollama_stream(prompt, model),
+        ollama_stream(prompt, model, current_time),
         mimetype="text/event-stream",  # SSE 必须用这个 MIME
         headers={
             "Cache-Control": "no-cache",
@@ -67,7 +82,7 @@ def chat():
 @app.route("/models")
 def models():
     models = ollama.list()
-    response = {"models":[]}
+    response = {"models": []}
     for model in models.models:
         logger.info(model.model)
         response["models"].append(model.model)
