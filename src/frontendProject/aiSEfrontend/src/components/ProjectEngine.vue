@@ -1,6 +1,6 @@
 <template>
   <div class="project-engine">
-    <h2>项目需求链式分析</h2>
+    <h2>软件项目链式分析</h2>
     <div class="input-area">
      <div class="input-row">
         <input v-model="projectDesc" placeholder="请输入初始项目需求描述..." />

@@ -190,7 +190,7 @@ h2 {
 /* 输入区域样式 */
 .input-area {
   width: 80vw;               /* 输入区宽度与答案区一致 */
-  max-width: 900px;          /* 最大宽度，防止超大屏幕过宽 */
+  max-width: 77vw;          /* 最大宽度，防止超大屏幕过宽 */
   display: flex;             /* 横向排列输入框、下拉框和按钮 */
   gap: 12px;                 /* 输入框、下拉框和按钮之间的间距 */
   align-items: center;       /* 垂直居中 */
