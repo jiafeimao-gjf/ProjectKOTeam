@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import QnAPage from './pages/QnAPage.vue'
 import ProjectEngine from './components/ProjectEngine.vue'
+import CustomProjectEngine from './components/CustomProjectEngine.vue'
 
 const mode = ref('qna') // 默认问答模式
 </script>
@@ -11,9 +12,11 @@ const mode = ref('qna') // 默认问答模式
     <div class="mode-switch">
       <button :class="{ active: mode === 'qna' }" @click="mode = 'qna'">问答模式</button>
       <button :class="{ active: mode === 'project' }" @click="mode = 'project'">项目模式</button>
+      <button :class="{ active: mode === 'customproject' }" @click="mode = 'customproject'">自定义项目模式</button>
     </div>
     <QnAPage v-if="mode === 'qna'" />
-    <ProjectEngine v-else />
+    <ProjectEngine v-if="mode === 'project'" />
+    <CustomProjectEngine v-else />
   </div>
 </template>
 

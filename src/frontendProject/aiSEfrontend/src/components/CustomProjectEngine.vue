@@ -1,23 +1,26 @@
 <template>
   <div class="project-engine">
-    <h2>项目需求链式分析</h2>
+    <h2>自定义链式思考内容生成工具</h2>
+    <!-- 每个输入框单独一行 -->
     <div class="input-area">
-     <div class="input-row">
-        <input v-model="projectDesc" placeholder="请输入初始项目需求描述..." />
+      <div class="input-row">
+        <input v-model="projectDesc" placeholder="请输入初始需求描述..." />
+      </div>
+      <div class="input-row">
+        <input v-model="firstTarget" placeholder="请输入第一个目标..." />
+      </div>
+      <div class="input-row">
+        <input v-model="secondTarget" placeholder="请输入第二个目标..." />
+      </div>
+      <div class="input-row">
+        <input v-model="lastTarget" placeholder="请输入最后一个目标..." />
       </div>
       <!-- 选择区和按钮一行 -->
       <div class="select-row">
         <select v-model="selectedModel" class="model-select">
           <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
         </select>
-        <input
-          type="number"
-          min="1"
-          max="1000"
-          v-model.number="stepCount"
-          placeholder="链式步数(默认5)"
-          class="step-input"
-        />
+        <input type="number" min="1" max="1000" v-model.number="stepCount" placeholder="链式步数(默认5)" class="step-input" />
         <button @click="startChain" :disabled="loading || !projectDesc">开始链式分析</button>
       </div>
     </div>
@@ -37,9 +40,14 @@ import { ref, onMounted, nextTick } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
-import { fetchStreamAnswer } from '../utils/llm.js' 
+import { fetchStreamAnswer } from '../utils/llm.js'
 
 const projectDesc = ref('')
+const firstTarget = ref('')
+const secondTarget = ref('')
+const lastTarget = ref('')
+const firstAnswer = ref('')
+
 const selectedModel = ref('')
 const modelList = ref([])
 const chainNodes = ref([])
@@ -100,23 +108,39 @@ function flushAnswer(i, answerBuffer, isAnswer = true) {
 async function startChain() {
   chainNodes.value = []
   loading.value = true
-  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字，思考如何在 '+stepCount.value+' 步骤内完成这个项目的demo？\n'
-  for (let i = 0; i < stepCount.value; i++) {
-    // 使用 EventSource 流式获取答案
-    const answerBuffer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, i, true).then((buffer) => {
-      return buffer
-    })
+  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字。\n' + firstTarget.value + '思考如何在 ' + stepCount.value + ' 步骤内完成这个项目的demo？\n'
+  firstAnswer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, 0, true)
+  prompt += '\n' + firstAnswer + '\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！如果项目完成了就输出为空的答案。\n'
 
-    // 要求大模型浓缩总结一下答案，不超过100字
+  for (let i = 1; i < stepCount.value; i++) {
+    // 获取链式节点答案
+    const answerBuffer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, i, true)
+      .then((buffer) => {
+        return buffer
+      })
+
+    if (!answerBuffer) {
+      console.log('链式分析已完成或无更多内容')
+      loading.value = false
+      break
+    }
+
+    // 获取浓缩总结
     const summaryPrompt = `请用不超过300字浓缩总结上面的内容。`
-    const summaryBuffer = await fetchStreamAnswer(prompt + '\n' + answerBuffer + '\n' + summaryPrompt, selectedModel.value, flushAnswer, i, false).then((buffer) => {
-      return '**总结：** \n' + buffer
-    })
+    const summaryBuffer = await fetchStreamAnswer(prompt + '\n' + answerBuffer + '\n' + summaryPrompt, selectedModel.value, flushAnswer, i, false)
+      .then((buffer) => {
+        return '**总结：** \n' + buffer
+      })
 
-    // 下一步的 prompt 加上上一步的答案
-    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于5000个字，保证整体步骤思路目标一致，思考下一步：是要写代码还是出方案？按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出为空的答案。\n'
-    // 如果本步没有内容，提前结束
-    if (!answerBuffer) break
+    // 下一步 prompt
+    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于5000个字，保证整体步骤思路目标一致，下一步：' + secondTarget +
+      '\n按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出为空的答案。\n'
+
+    if (!answerBuffer) {
+      console.log('链式分析已完成或无更多内容')
+      loading.value = false
+      break
+    }
   }
   loading.value = false
 }
@@ -156,27 +180,6 @@ async function startChain() {
   border-radius: 6px;
   border: 1px solid #ccc;
   background: #f8f8fa;
-}
-
-input,
-.model-select {
-  flex: 1;
-  padding: 12px;
-  font-size: 1em;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: #f8f8fa;
-}
-
-button {
-  padding: 12px 12px;
-  font-size: 1em;
-  border-radius: 6px;
-  border: none;
-  background: #4f8cff;
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.2s;
 }
 
 .select-row {
@@ -231,7 +234,7 @@ button:disabled {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  padding: 20px;
-  margin-bottom: 20px;
+  padding: 12px;
+  margin-bottom: 12px;
 }
 </style>
