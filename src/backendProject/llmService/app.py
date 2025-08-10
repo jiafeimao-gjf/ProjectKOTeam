@@ -10,6 +10,7 @@ import ollama
 from flask import Flask, Response, request
 import ollama
 import json
+from pymongo import MongoClient
 
 
 # from .log.log_utils import logger
@@ -21,6 +22,11 @@ def get_logger(name):
 logger = get_logger(__name__)
 
 app = Flask(__name__)
+
+# 添加MongoDB连接
+client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
+db = client['llm_chat_history']  # 数据库名称
+chat_collection = db['chat_records']  # 集合名称
 
 # 获取格式化时间 2025-08-09 23:59:59
 current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -41,6 +47,17 @@ def ollama_stream(prompt, target_model, postfix):
             yield f"data: {json.dumps({'text': text})}\n\n"
     # 告诉前端结束
     yield "data: [DONE]\n\n"
+    
+    # MongoDB 存储逻辑
+    chat_record = {
+        "prompt": save_data["prompt"],
+        "answer": save_data["answer"],
+        "model": target_model,
+        "timestamp": current_time,
+        "uuid": str(uuid.uuid4())
+    }
+    chat_collection.insert_one(chat_record)
+    logger.info("数据已保存到MongoDB")
     # 保存到history 下面
     random_id = str(uuid.uuid4())
     if not os.path.exists(f"history/history_{postfix}"):
