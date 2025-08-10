@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<!--  语言设置，避免乱码  -->
+    <meta charset="utf-8">
+    <title>俄罗斯方块</title>
+    <style>
+        canvas { border: 1px solid black; }
+        body { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>俄罗斯方块</h1>
+    <canvas id="gameCanvas" width="300" height="600"></canvas>
+    <br><button onclick="startGame()">开始游戏</button>
+</body>
+<script>
+    // tetris.js
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const gridSize = 10;
+const gridWidth = canvas.width / gridSize;
+const gridHeight = canvas.height / gridSize;
+
+let board = [];
+let currentPiece = null;
+let score = 0;
+
+function initBoard() {
+    board = Array(gridHeight).fill().map(() => Array(gridWidth).fill(0));
+}
+
+function startGame() {
+    initBoard();
+    generatePiece();
+    gameLoop();
+}
+
+// 方块形状定义
+const pieces = [
+    [[1,1,1,1]], // I
+    [[1,1],[1,1]], // O
+    [[0,1,0],[1,1,1]], // T
+    [[0,1,1],[1,1,0]], // S
+    [[1,1,0],[0,1,1]]  // Z
+    [[1,1,1],[0,0,1]]  // F
+];
+
+function generatePiece() {
+    const pieceType = Math.floor(Math.random() * pieces.length);
+    currentPiece = {
+        shape: pieces[pieceType],
+        x: Math.floor(gridWidth / 2) - 1,
+        y: 0
+    };
+}
+
+function drawPiece() {
+    if (!currentPiece) return;
+    ctx.fillStyle = 'blue';
+    currentPiece.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (cell) {
+                ctx.fillRect(
+                    (currentPiece.x + x) * gridSize,
+                    (currentPiece.y + y) * gridSize,
+                    gridSize - 1, gridSize - 1
+                );
+            }
+        });
+    });
+}
+
+function checkCollision(piece, dx = 0, dy = 0) {
+    for (let y = 0; y < piece.shape.length; y++) {
+        for (let x = 0; x < piece.shape[y].length; x++) {
+            if (piece.shape[y][x]) {
+                const newX = piece.x + x + dx;
+                const newY = piece.y + y + dy;
+                if (newX < 0 || newX >= gridWidth ||
+                    newY >= gridHeight ||
+                    (newY >= 0 && board[newY][newX])) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+function movePiece(dx, dy) {
+    if (!checkCollision(currentPiece, dx, dy)) {
+        currentPiece.x += dx;
+        currentPiece.y += dy;
+        return true;
+    }
+    return false;
+}
+
+function gameLoop() {
+    if (movePiece(0, 1)) {
+        draw();
+        setTimeout(gameLoop, 1000);
+    } else {
+        // 碰撞处理
+        placePiece();
+        clearLines();
+        generatePiece();
+        draw();
+        setTimeout(gameLoop, 1000);
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBoard();
+    drawPiece();
+}
+
+function placePiece() {
+    currentPiece.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (cell) {
+                const boardY = currentPiece.y + y;
+                if (boardY >= 0) {
+                    board[boardY][currentPiece.x + x] = 1;
+                }
+            }
+        });
+    });
+}
+
+function clearLines() {
+    let linesCleared = 0;
+    for (let y = gridHeight - 1; y >= 0; y--) {
+        if (board[y].every(cell => cell === 1)) {
+            board.splice(y, 1);
+            board.unshift(Array(gridWidth).fill(0));
+            linesCleared++;
+            y++; // 重新检查当前行
+        }
+    }
+    if (linesCleared > 0) {
+        score += linesCleared * 100;
+        document.title = `俄罗斯方块 - 分数: ${score}`;
+    }
+}
+
+// 键盘控制
+document.addEventListener('keydown', e => {
+    switch(e.key) {
+        case 'ArrowLeft': movePiece(-1, 0); break;
+        case 'ArrowRight': movePiece(1, 0); break;
+        case 'ArrowDown': movePiece(0, 1); break;
+        case 'ArrowUp': rotatePiece(); break;
+    }
+});
+
+function rotatePiece() {
+    // 简化旋转实现
+    const originalShape = currentPiece.shape;
+    const rows = originalShape.length;
+    const cols = originalShape[0].length;
+    const newShape = Array(cols).fill().map(() => Array(rows).fill(0));
+
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            newShape[x][rows - 1 - y] = originalShape[y][x];
+        }
+    }
+
+    currentPiece.shape = newShape;
+}
+
+function drawBoard() {
+    board.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (cell) {
+                ctx.fillStyle = 'gray';
+                ctx.fillRect(x * gridSize, y * gridSize, gridSize - 1, gridSize - 1);
+            }
+        });
+    });
+}
+</script>
+</html>

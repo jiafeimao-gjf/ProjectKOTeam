@@ -7,9 +7,11 @@
       </div>
       <!-- 选择区和按钮一行 -->
       <div class="select-row">
+        <p>模型选择:</p>
         <select v-model="selectedModel" class="model-select">
           <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
         </select>
+        <p>反复问答次数:</p>
         <input
           type="number"
           min="1"
@@ -23,7 +25,7 @@
     </div>
     <div class="chain-result">
       <div v-for="(node, idx) in chainNodes" :key="idx" class="chain-node">
-        <h3>第{{ idx + 1 }}步</h3>
+        <h3>第{{ idx }}步</h3>
         <div v-html="node.answer"></div>
         <div v-if="node.summary" v-html="node.summary" style="margin-top:12px;color:#4f8cff;"></div>
       </div>
@@ -100,12 +102,23 @@ function flushAnswer(i, answerBuffer, isAnswer = true) {
 async function startChain() {
   chainNodes.value = []
   loading.value = true
-  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字，思考如何在 '+stepCount.value+' 步骤内完成这个项目的demo？\n'
-  for (let i = 0; i < stepCount.value; i++) {
+  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字，思考如何在不多于 '+stepCount.value+' 步骤 （可以减少步骤）完成这个项目的demo？\n'
+  const firstAnswer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, 0, true)
+  prompt += '\n' + firstAnswer + '\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！如果项目完成了就输出: 【答案生成完毕】。\n'
+  for (let i = 1; i < stepCount.value; i++) {
+    prompt = '第 ' + i + '步：' + prompt
     // 使用 EventSource 流式获取答案
     const answerBuffer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, i, true).then((buffer) => {
       return buffer
     })
+
+    console.log('第 ' + i + ' 步答案:', answerBuffer)
+
+    if (!answerBuffer || answerBuffer.trim() === '' || answerBuffer.trim().includes('答案生成完毕')) {
+      console.log('链式分析已完成或无更多内容')
+      loading.value = false
+      break
+    }
 
     // 要求大模型浓缩总结一下答案，不超过100字
     const summaryPrompt = `请用不超过300字浓缩总结上面的内容。`
@@ -114,9 +127,13 @@ async function startChain() {
     })
 
     // 下一步的 prompt 加上上一步的答案
-    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于5000个字，保证整体步骤思路目标一致，思考下一步：是要写代码还是出方案？按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出为空的答案。\n'
+    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于5000个字，保证整体步骤思路目标一致，思考下一步：是要写代码还是出方案？按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出： 【答案生成完毕】\n\n'
     // 如果本步没有内容，提前结束
-    if (!answerBuffer) break
+    if (!answerBuffer || answerBuffer.trim() === '') {
+      console.log('链式分析已完成或无更多内容')
+      loading.value = false
+      break
+    }
   }
   loading.value = false
 }
@@ -223,7 +240,7 @@ button:disabled {
 
 .chain-result {
   width: 80vw;
-  max-width: 900px;
+  max-width: 66vw;
   margin-bottom: 48px;
 }
 
@@ -233,5 +250,6 @@ button:disabled {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 20px;
   margin-bottom: 20px;
+  margin-top: 20px;
 }
 </style>

@@ -17,9 +17,11 @@
       </div>
       <!-- 选择区和按钮一行 -->
       <div class="select-row">
+        <p>模型选择:</p>
         <select v-model="selectedModel" class="model-select">
           <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
         </select>
+        <p>反复问答次数:</p>
         <input type="number" min="1" max="1000" v-model.number="stepCount" placeholder="链式步数(默认5)" class="step-input" />
         <button @click="startChain" :disabled="loading || !projectDesc">开始链式分析</button>
       </div>
@@ -108,18 +110,21 @@ function flushAnswer(i, answerBuffer, isAnswer = true) {
 async function startChain() {
   chainNodes.value = []
   loading.value = true
-  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字。\n' + firstTarget.value + '思考如何在 ' + stepCount.value + ' 步骤内完成这个项目的demo？\n'
-  firstAnswer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, 0, true)
-  prompt += '\n' + firstAnswer + '\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！如果项目完成了就输出为空的答案。\n'
+  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字。\n' + firstTarget.value + '思考如何不多于 '+stepCount.value+' 步骤 （可以减少步骤）完成这个项目的demo？\n'
+  firstAnswer.value = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, 0, true)
+  prompt += '\n' + firstAnswer.value + '\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！如果项目完成了就输出： 【答案生成完毕】\n'
 
   for (let i = 1; i < stepCount.value; i++) {
+    prompt = '第 ' + i + '步：' + prompt
+    console.log('prompt: ' + prompt)
     // 获取链式节点答案
     const answerBuffer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, i, true)
       .then((buffer) => {
         return buffer
       })
 
-    if (!answerBuffer) {
+    console.log('第 ' + i + ' 步答案:', answerBuffer)
+    if (!answerBuffer || answerBuffer.trim() === '' || answerBuffer.trim().includes('答案生成完毕')) {
       console.log('链式分析已完成或无更多内容')
       loading.value = false
       break
@@ -134,9 +139,9 @@ async function startChain() {
 
     // 下一步 prompt
     prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于5000个字，保证整体步骤思路目标一致，下一步：' + secondTarget +
-      '\n按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出为空的答案。\n'
+      '\n按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出： 【答案生成完毕】\n'
 
-    if (!answerBuffer) {
+    if (!answerBuffer || answerBuffer.trim() === '') {
       console.log('链式分析已完成或无更多内容')
       loading.value = false
       break
@@ -223,10 +228,10 @@ button:disabled {
   background: #b0c4e6;
   cursor: not-allowed;
 }
-
+ 
 .chain-result {
   width: 80vw;
-  max-width: 900px;
+  max-width: 66vw;
   margin-bottom: 48px;
 }
 
@@ -236,5 +241,6 @@ button:disabled {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 12px;
   margin-bottom: 12px;
+  margin-top: 20px;
 }
 </style>

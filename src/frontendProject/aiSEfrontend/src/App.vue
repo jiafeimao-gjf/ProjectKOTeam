@@ -16,7 +16,7 @@ const mode = ref('qna') // 默认问答模式
     </div>
     <QnAPage v-if="mode === 'qna'" />
     <ProjectEngine v-if="mode === 'project'" />
-    <CustomProjectEngine v-else />
+    <CustomProjectEngine v-if="mode === 'customproject'" />
   </div>
 </template>
 
