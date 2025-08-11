@@ -1,0 +1,52 @@
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f0f0f0;
+}
+
+#image-container {
+  width: 80%;
+  margin: 20px auto;
+  text-align: center;
+}
+
+#current-image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  transition: transform 0.3s ease; /* 添加过渡效果 */
+}
+
+#navigation {
+  margin-top: 10px;
+}
+
+#navigation button {
+  padding: 10px 20px;
+  margin: 0 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+#image-info {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#image-info p {
+  margin: 5px 0;
+}
+
+/* 动画效果 */
+#current-image {
+  transform: scale(1); /* 初始缩放 */
+}
+
+#current-image.zoom {
+  transform: scale(1.1); /* 放大效果 */
+}
