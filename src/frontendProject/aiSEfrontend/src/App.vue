@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import QnAPage from './pages/QnAPage.vue'
 import ProjectEngine from './components/ProjectEngine.vue'
 import CustomProjectEngine from './components/CustomProjectEngine.vue'
-import SoftwarerojectEngine from './components/SoftwarerojectEngine.vue'
+import SoftwarerojectEngine from './components/SoftwareProjectEngine.vue'
 
 const mode = ref('qna') // 默认问答模式
 </script>

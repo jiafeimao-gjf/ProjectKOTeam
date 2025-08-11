@@ -112,9 +112,9 @@ def chat():
     global postfix
     # current_time 时间距离当前时间超过5分钟，更新 current_time
     if time.time() - time.mktime(time.strptime(current_time, "%Y-%m-%d %H:%M:%S")) > 300:
-        logger.info("时间距离当前时间超过5分钟，更新 postfix from {}", postfix)
+        logger.info(f"时间距离当前时间超过5分钟，更新 postfix from {postfix}")
         postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
-        logger.info("时间距离当前时间超过5分钟，更新 postfix to {}", postfix)
+        logger.info(f"时间距离当前时间超过5分钟，更新 postfix to {postfix}")
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     return Response(
