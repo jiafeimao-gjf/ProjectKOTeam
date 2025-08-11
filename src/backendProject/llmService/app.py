@@ -33,7 +33,7 @@ current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
-def ollama_stream(prompt, target_model, postfix):
+def ollama_stream(prompt, target_model, subfix):
     logger.info(f"ollama_stream: {prompt}, model: {target_model}")
     # 调用 ollama 流式生成
     save_data = {"prompt": prompt, "answer": ""}
@@ -60,9 +60,9 @@ def ollama_stream(prompt, target_model, postfix):
     logger.info("数据已保存到MongoDB")
     # 保存到history 下面
     random_id = str(uuid.uuid4())
-    if not os.path.exists(f"history/history_{postfix}"):
-        os.mkdir(f"history/history_{postfix}")
-    with open(f"history/history_{postfix}/history_{random_id}.md", "a") as f:
+    if not os.path.exists(f"history/history_{subfix}"):
+        os.mkdir(f"history/history_{subfix}")
+    with open(f"history/history_{subfix}/history_{random_id}.md", "a") as f:
         logger.info("保存数据")
 
         f.write(f"# prompt: {save_data['prompt']}\n")
