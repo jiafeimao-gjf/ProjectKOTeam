@@ -1,0 +1,5 @@
+Flask==2.3.2
+Flask-Uploads==0.2.1
+PyPDF2==3.0.1
+docx==0.2.4
+SQLAlchemy==2.0.43
