@@ -95,6 +95,12 @@ function askQuestion() {
   }).then((streamUrl) => {
     eventSource = new EventSource(streamUrl)
     eventSource.onmessage = (event) => {
+      // 检查流式消息是否为结束标志
+      if (event.data === '[DONE]') {
+        loading.value = false
+        eventSource.close()
+        return
+      }
       try {
         const data = JSON.parse(event.data)
         if (data.text) {

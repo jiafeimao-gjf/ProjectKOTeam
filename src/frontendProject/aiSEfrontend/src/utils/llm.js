@@ -17,6 +17,11 @@ export async function fetchStreamAnswer(prompt, model, flushAnswer = () => {}, i
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
+          if (event.data === '[DONE]') {
+            loading.value = false
+            eventSource.close()
+            return
+          }
           if (data.text) {
             buffer += data.text
             flushAnswer(index, buffer, isAnswer)

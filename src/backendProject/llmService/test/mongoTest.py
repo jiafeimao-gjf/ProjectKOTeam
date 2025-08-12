@@ -48,3 +48,6 @@ if __name__ == '__main__':
     # documents = chat_collection.find(query, projection).sort("prompt", 1)  # 1 表示升序，-1 表示降序
     # for document in documents:
     #     print(document)
+
+    # 更新测试
+    chat_collection.update_one({"prompt": "prompt_config"}, {"$set": {"prompts": ["你好", "你好"]}})

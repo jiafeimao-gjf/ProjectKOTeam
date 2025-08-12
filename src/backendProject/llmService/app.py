@@ -47,7 +47,7 @@ def ollama_stream(prompt, target_model, subfix):
             yield f"data: {json.dumps({'text': text})}\n\n"
     # 告诉前端结束
     yield "data: [DONE]\n\n"
-    
+
     # MongoDB 存储逻辑
     chat_record = {
         "prompt": save_data["prompt"],
@@ -136,6 +136,25 @@ def models():
         logger.info(model.model)
         response["models"].append(model.model)
     return response
+
+
+@app.get("/prompt_config")
+def prompt_config():
+    result = chat_collection.find({"key": {"$regex": "prompt_config"}})
+    prompts = []
+    for prompt in result:
+        logger.info(prompt)
+        prompts.append(prompt)
+    return prompts
+
+
+@app.post("/prompt_config")
+def post_prompt_config():
+    prompts = request.json.get("prompts")
+    if not prompts:
+        return "prompts is empty"
+    chat_collection.update_one({"key": "prompt_config"}, {"$set": {"prompts": prompts}})
+    return "success"
 
 
 if __name__ == "__main__":

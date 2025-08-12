@@ -111,7 +111,7 @@ function flushAnswer(i, answerBuffer, isAnswer = true) {
 async function startChain() {
   chainNodes.value = []
   loading.value = true
-  let prompt = projectDesc.value + '\n中文回答，字数不多与于1000个字。\n' + firstTarget.value + '思考如何不多于 '+stepCount.value+' 步骤 （可以减少步骤）完成这个项目的demo？\n'
+  let prompt = projectDesc.value + '\n中文回答，字数不少于1000个字。\n' + firstTarget.value + '思考如何不多于 '+stepCount.value+' 步骤 （可以减少步骤）完成这个项目的demo？\n'
   firstAnswer.value = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, 0, true)
   prompt += '\n' + firstAnswer.value + '\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！如果项目完成了就输出： 【答案生成完毕】\n'
 
