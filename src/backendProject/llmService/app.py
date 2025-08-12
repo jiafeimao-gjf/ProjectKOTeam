@@ -36,7 +36,7 @@ postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
 def ollama_stream(prompt, target_model, subfix):
     logger.info(f"ollama_stream: {prompt}, model: {target_model}")
     # 调用 ollama 流式生成
-    save_data = {"prompt": prompt, "answer": ""}
+    save_data = {"model":target_model, "prompt": prompt, "answer": ""}
     for chunk in ollama.generate(model="gemma3n:e4b" if target_model == "gemma3n:e4b" else target_model, prompt=prompt,
                                  stream=True):
         text = chunk.get("response", "")
@@ -64,7 +64,7 @@ def ollama_stream(prompt, target_model, subfix):
         os.mkdir(f"history/history_{subfix}")
     with open(f"history/history_{subfix}/history_{random_id}.md", "a") as f:
         logger.info("保存数据")
-
+        f.write(f"# model: {save_data['model']}\n")
         f.write(f"# prompt: {save_data['prompt']}\n")
         f.write(f"# answer: \n {save_data['answer']}\n")
         logger.info("保存成功")
