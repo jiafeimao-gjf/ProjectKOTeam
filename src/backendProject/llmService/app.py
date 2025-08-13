@@ -24,9 +24,9 @@ logger = get_logger(__name__)
 app = Flask(__name__)
 
 # 添加MongoDB连接
-client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
-db = client['llm_chat_history']  # 数据库名称
-chat_collection = db['chat_records']  # 集合名称
+# client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
+# db = client['llm_chat_history']  # 数据库名称
+# chat_collection = db['chat_records']  # 集合名称
 
 # 获取格式化时间 2025-08-09 23:59:59
 current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -49,15 +49,15 @@ def ollama_stream(prompt, target_model, subfix):
     yield "data: [DONE]\n\n"
 
     # MongoDB 存储逻辑
-    chat_record = {
-        "prompt": save_data["prompt"],
-        "answer": save_data["answer"],
-        "model": target_model,
-        "timestamp": current_time,
-        "uuid": str(uuid.uuid4())
-    }
-    chat_collection.insert_one(chat_record)
-    logger.info("数据已保存到MongoDB")
+    # chat_record = {
+    #     "prompt": save_data["prompt"],
+    #     "answer": save_data["answer"],
+    #     "model": target_model,
+    #     "timestamp": current_time,
+    #     "uuid": str(uuid.uuid4())
+    # }
+    # chat_collection.insert_one(chat_record)
+    # logger.info("数据已保存到MongoDB")
     # 保存到history 下面
     random_id = str(uuid.uuid4())
     if not os.path.exists(f"history/history_{subfix}"):
@@ -140,29 +140,33 @@ def models():
 
 @app.get("/prompt_config")
 def prompt_config():
-    results = chat_collection.find({"key": "prompt_config"})
-    for result in results:
-        logger.info(result["prompts"])
-        # 解码\u4f60\u662f
-        # 解码Unicode转义字符
-        return {"prompts": result["prompts"]}
-    return {"prompts": []}
+    # results = chat_collection.find({"key": "prompt_config"})
+    # for result in results:
+    #     logger.info(result["prompts"])
+    #     # 解码\u4f60\u662f
+    #     # 解码Unicode转义字符
+    #     return {"prompts": result["prompts"]}
+    return {"prompts": ["你是一个具备十年项目管理经验的项目经理，可以针对项目需求，进行规划项目迭代交付计划，你可以将项目下发到产品经理、架构师，开发测试人员，保障项目正常迭代。",
+            "你是一个具备十年产品经验的产品经理，可以针对项目需求，进行产品功能设计，你可以将产品功能设计下发到开发人员，保障产品功能正常实现。",
+            "你是一个具备十年开发经验和架构经验的架构师，可以针对项目需求，设计详尽的技术方案，输出技术方案文档。",
+            "你是一个具备十年开发经验的全栈开发者，可以针对项目需求和技术方案，进行项目开发，输出实现代码，保证完成需求里面的每一个功能。",
+            "你是一个具备十年测试经验的测试工程师，可以针对项目需求，进行项目测试，你可以将项目测试下发到测试人员，保障项目测试正常进行。"]}
 
 
 @app.post("/prompt_config")
 def post_prompt_config():
-    prompts = request.json.get("prompts")
-    if not prompts:
-        return "prompts is empty"
-    # 插入或者更新
-    update_result = chat_collection.update_one({"key": "prompt_config"}, {"$set": {"prompts": prompts}}, upsert=True)
-    if update_result.modified_count == 0:
-        logger.error("update failed")
-
-    results = chat_collection.find({"key": "prompt_config"})
-    # logger.info(results)
-    for result in results:
-        logger.info(result["prompts"])
+    # prompts = request.json.get("prompts")
+    # if not prompts:
+    #     return "prompts is empty"
+    # # 插入或者更新
+    # update_result = chat_collection.update_one({"key": "prompt_config"}, {"$set": {"prompts": prompts}}, upsert=True)
+    # if update_result.modified_count == 0:
+    #     logger.error("update failed")
+    #
+    # results = chat_collection.find({"key": "prompt_config"})
+    # # logger.info(results)
+    # for result in results:
+    #     logger.info(result["prompts"])
 
     return {"msg": "success", "code": 0}
 

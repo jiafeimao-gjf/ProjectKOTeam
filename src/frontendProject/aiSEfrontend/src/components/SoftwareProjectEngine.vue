@@ -76,7 +76,6 @@ onMounted(async () => {
   try {
     const res = await fetch('/api/prompt_config')
     const data = await res.json()
-    console.log('获取预设提示:', data)
     prompts.value = data.prompts || []
   } catch (error) {
     console.error('获取预设提示失败:', error)
@@ -118,21 +117,36 @@ function flushAnswer(i, answerBuffer, isAnswer = true) {
 async function startChain() {
   chainNodes.value = []
   loading.value = true
-  let prompt = projectDesc.value + '\n中文回答，字数不少于1000个字。\n' + prompts.value[0] + ' 思考如何不多于 ' + stepCount.value + ' 步骤 （可以减少步骤）完成这个项目的demo？\n'
+  let prompt = projectDesc.value + '\n中文回答，字数尽量少,但不少于1000字，但需要完整输出答案。\n' + prompts.value[0] + ' 思考如何不多于 ' + (stepCount.value - 1) + ' 步骤 （可以减少步骤）完成这个项目的demo？\n'
   firstAnswer.value = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, 0, true)
-  let originPrompt = firstAnswer.value + '\n '
-
+  let projectManage = firstAnswer.value
+  let demand = ''
+  let techDesign = ''
   for (let i = 1; i < stepCount.value; i++) {
-    prompt = '第 ' + i + '步：' + originPrompt + prompts.value[i] + ' 请完成你要做的事情！\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！'
-    console.log('prompt: ' + prompt)
+    let sourcePrompt = ''
+    if (prompts.value[i].includes('产品经理')) {
+      sourcePrompt = projectManage + '\n'
+    } else if (prompts.value[i].includes('架构师')) {
+      sourcePrompt = demand + '\n'
+    } else if (prompts.value[i].includes('开发者')) {
+      sourcePrompt = demand + '\n\n' +techDesign + '\n'
+    } else if (prompts.value[i].includes('测试人员')) {
+      sourcePrompt = demand + '\n\n' +techDesign + '\n'
+    }
+    prompt = '第 ' + i + '步：' + sourcePrompt + prompts.value[i] + ' 请完成你要做的事情！\n中文回答，字数尽量少，但不少于3000字且要完整输出答案【要避免答案与问题内容重叠或者重复】！！！'
+    // console.log('prompt: ' + prompt)
     // 获取链式节点答案
     const answerBuffer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, i, true)
       .then((buffer) => {
         return buffer
       })
 
-    console.log('第 ' + i + ' 步答案:', answerBuffer)
-    originPrompt = originPrompt + '\n' + answerBuffer + '\n'
+    if (prompts.value[i].includes('产品经理')) {
+      demand = answerBuffer
+    } else if (prompts.value[i].includes('架构师')) {
+      techDesign = answerBuffer
+    }
+
     if (!answerBuffer || answerBuffer.trim() === '' || answerBuffer.trim().includes('答案生成完毕')) {
       console.log('链式分析已完成或无更多内容')
       loading.value = false
