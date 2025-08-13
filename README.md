@@ -19,7 +19,7 @@ ollama run gemma3:4b
   
 - clone项目
 ```shell
-git clone 
+git clone https://github.com/jiafeimao-gjf/ProjectKOTeam.git
 ```
 - vscode 打开 项目
 - 前端启动
