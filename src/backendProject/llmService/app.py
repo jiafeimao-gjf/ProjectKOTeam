@@ -10,7 +10,7 @@ import ollama
 from flask import Flask, Response, request
 import ollama
 import json
-from pymongo import MongoClient
+# from pymongo import MongoClient
 
 
 # from .log.log_utils import logger
