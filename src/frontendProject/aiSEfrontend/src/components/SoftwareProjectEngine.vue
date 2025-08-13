@@ -1,19 +1,12 @@
 <template>
   <div class="project-engine">
-    <h2>自定义链式思考内容生成工具</h2>
+    <h2>软件项目孵化链式思考内容生成工具</h2>
     <!-- 每个输入框单独一行 -->
     <div class="input-area">
-      <div class="input-row">
-        <input v-model="projectDesc" placeholder="请输入初始需求描述..." />
-      </div>
-      <div class="input-row">
-        <input v-model="firstTarget" placeholder="请输入第一个目标..." />
-      </div>
-      <div class="input-row">
-        <input v-model="secondTarget" placeholder="请输入第二个目标..." />
-      </div>
-      <div class="input-row">
-        <input v-model="lastTarget" placeholder="请输入最后一个目标..." />
+      <div class="input-area">
+        <div class="input-row">
+          <input v-model="projectDesc" placeholder="请输入初始需求描述..." />
+        </div>
       </div>
       <!-- 选择区和按钮一行 -->
       <div class="select-row">
@@ -24,6 +17,12 @@
         <p>反复问答次数:</p>
         <input type="number" min="1" max="1000" v-model.number="stepCount" placeholder="链式步数(默认5)" class="step-input" />
         <button @click="startChain" :disabled="loading || !projectDesc">开始链式分析</button>
+      </div>
+    </div>
+    <!-- 展示 prompts 列表 -->
+    <div class="prompts-list">
+      <div v-for="(prompt, idx) in prompts" :key="idx" class="prompt-item">
+        <strong>第 {{ idx + 1 }} 个提示词：</strong> {{ prompt }}
       </div>
     </div>
     <div class="chain-result">
@@ -46,9 +45,6 @@ import 'highlight.js/styles/github.css'
 import { fetchStreamAnswer } from '../utils/llm.js'
 
 const projectDesc = ref('')
-const firstTarget = ref('')
-const secondTarget = ref('')
-const lastTarget = ref('')
 const firstAnswer = ref('')
 
 const selectedModel = ref('')
@@ -56,6 +52,7 @@ const modelList = ref([])
 const chainNodes = ref([])
 const loading = ref(false)
 const stepCount = ref(5) // 步数，默认5步
+const prompts = ref([])
 
 // 初始化模型列表
 onMounted(async () => {
@@ -74,6 +71,16 @@ onMounted(async () => {
       'gemma2:2b'
     ]
     selectedModel.value = modelList.value[0]
+  }
+
+  try {
+    const res = await fetch('/api/prompt_config')
+    const data = await res.json()
+    console.log('获取预设提示:', data)
+    prompts.value = data.prompts || []
+  } catch (error) {
+    console.error('获取预设提示失败:', error)
+    prompts.value = []
   }
 })
 
@@ -111,12 +118,12 @@ function flushAnswer(i, answerBuffer, isAnswer = true) {
 async function startChain() {
   chainNodes.value = []
   loading.value = true
-  let prompt = projectDesc.value + '\n中文回答，字数不少于1000个字。\n' + firstTarget.value + '思考如何不多于 '+stepCount.value+' 步骤 （可以减少步骤）完成这个项目的demo？\n'
+  let prompt = projectDesc.value + '\n中文回答，字数不少于1000个字。\n' + prompts.value[0] + ' 思考如何不多于 ' + stepCount.value + ' 步骤 （可以减少步骤）完成这个项目的demo？\n'
   firstAnswer.value = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, 0, true)
-  prompt += '\n' + firstAnswer.value + '\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！如果项目完成了就输出： 【答案生成完毕】\n'
+  let originPrompt = firstAnswer.value + '\n '
 
   for (let i = 1; i < stepCount.value; i++) {
-    prompt = '第 ' + i + '步：' + prompt
+    prompt = '第 ' + i + '步：' + originPrompt + prompts.value[i] + ' 请完成你要做的事情！\n中文回答，字数不多于5000个字，按照上述步骤执行【要避免答案重叠或者重复】！！！'
     console.log('prompt: ' + prompt)
     // 获取链式节点答案
     const answerBuffer = await fetchStreamAnswer(prompt, selectedModel.value, flushAnswer, i, true)
@@ -125,24 +132,8 @@ async function startChain() {
       })
 
     console.log('第 ' + i + ' 步答案:', answerBuffer)
+    originPrompt = originPrompt + '\n' + answerBuffer + '\n'
     if (!answerBuffer || answerBuffer.trim() === '' || answerBuffer.trim().includes('答案生成完毕')) {
-      console.log('链式分析已完成或无更多内容')
-      loading.value = false
-      break
-    }
-
-    // 获取浓缩总结
-    const summaryPrompt = `请用不超过300字浓缩总结上面的内容。`
-    const summaryBuffer = await fetchStreamAnswer(prompt + '\n' + answerBuffer + '\n' + summaryPrompt, selectedModel.value, flushAnswer, i, false)
-      .then((buffer) => {
-        return '**总结：** \n' + buffer
-      })
-
-    // 下一步 prompt
-    prompt += '\n' + summaryBuffer + '\n中文回答，字数不多于5000个字，保证整体步骤思路目标一致，下一步：' + secondTarget +
-      '\n按照需要的情况进行回答【要避免答案重叠或者重复】！！！如果项目完成了就输出： 【答案生成完毕】\n'
-
-    if (!answerBuffer || answerBuffer.trim() === '') {
       console.log('链式分析已完成或无更多内容')
       loading.value = false
       break
@@ -229,7 +220,7 @@ button:disabled {
   background: #b0c4e6;
   cursor: not-allowed;
 }
- 
+
 .chain-result {
   width: 80vw;
   max-width: 66vw;

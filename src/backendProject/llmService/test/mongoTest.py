@@ -8,7 +8,7 @@ if __name__ == '__main__':
     # 查找所有文档
     documents = chat_collection.find()
     for document in documents:
-        print(document)
+        print(document.get("prompts"))
     # # 写入
     # chat_collection.insert_one({
     #     "prompt": "你好",

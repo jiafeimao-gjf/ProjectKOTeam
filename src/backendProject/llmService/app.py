@@ -10,7 +10,7 @@ import ollama
 from flask import Flask, Response, request
 import ollama
 import json
-# from pymongo import MongoClient
+from pymongo import MongoClient
 
 
 # from .log.log_utils import logger
@@ -24,9 +24,9 @@ logger = get_logger(__name__)
 app = Flask(__name__)
 
 # 添加MongoDB连接
-# client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
-# db = client['llm_chat_history']  # 数据库名称
-# chat_collection = db['chat_records']  # 集合名称
+client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
+db = client['llm_chat_history']  # 数据库名称
+chat_collection = db['chat_records']  # 集合名称
 
 # 获取格式化时间 2025-08-09 23:59:59
 current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -36,7 +36,7 @@ postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
 def ollama_stream(prompt, target_model, subfix):
     logger.info(f"ollama_stream: {prompt}, model: {target_model}")
     # 调用 ollama 流式生成
-    save_data = {"model":target_model, "prompt": prompt, "answer": ""}
+    save_data = {"model": target_model, "prompt": prompt, "answer": ""}
     for chunk in ollama.generate(model="gemma3n:e4b" if target_model == "gemma3n:e4b" else target_model, prompt=prompt,
                                  stream=True):
         text = chunk.get("response", "")
@@ -49,15 +49,15 @@ def ollama_stream(prompt, target_model, subfix):
     yield "data: [DONE]\n\n"
 
     # MongoDB 存储逻辑
-    # chat_record = {
-    #     "prompt": save_data["prompt"],
-    #     "answer": save_data["answer"],
-    #     "model": target_model,
-    #     "timestamp": current_time,
-    #     "uuid": str(uuid.uuid4())
-    # }
-    # chat_collection.insert_one(chat_record)
-    # logger.info("数据已保存到MongoDB")
+    chat_record = {
+        "prompt": save_data["prompt"],
+        "answer": save_data["answer"],
+        "model": target_model,
+        "timestamp": current_time,
+        "uuid": str(uuid.uuid4())
+    }
+    chat_collection.insert_one(chat_record)
+    logger.info("数据已保存到MongoDB")
     # 保存到history 下面
     random_id = str(uuid.uuid4())
     if not os.path.exists(f"history/history_{subfix}"):
@@ -140,12 +140,13 @@ def models():
 
 @app.get("/prompt_config")
 def prompt_config():
-    result = chat_collection.find({"key": {"$regex": "prompt_config"}})
-    prompts = []
-    for prompt in result:
-        logger.info(prompt)
-        prompts.append(prompt)
-    return prompts
+    results = chat_collection.find({"key": "prompt_config"})
+    for result in results:
+        logger.info(result["prompts"])
+        # 解码\u4f60\u662f
+        # 解码Unicode转义字符
+        return {"prompts": result["prompts"]}
+    return {"prompts": []}
 
 
 @app.post("/prompt_config")
@@ -153,8 +154,17 @@ def post_prompt_config():
     prompts = request.json.get("prompts")
     if not prompts:
         return "prompts is empty"
-    chat_collection.update_one({"key": "prompt_config"}, {"$set": {"prompts": prompts}})
-    return "success"
+    # 插入或者更新
+    update_result = chat_collection.update_one({"key": "prompt_config"}, {"$set": {"prompts": prompts}}, upsert=True)
+    if update_result.modified_count == 0:
+        logger.error("update failed")
+
+    results = chat_collection.find({"key": "prompt_config"})
+    # logger.info(results)
+    for result in results:
+        logger.info(result["prompts"])
+
+    return {"msg": "success", "code": 0}
 
 
 if __name__ == "__main__":
