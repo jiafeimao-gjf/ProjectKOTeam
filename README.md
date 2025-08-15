@@ -88,6 +88,9 @@ python app.py
 
 结合更完备的预置prompt，和提问的问题，支持选择本地下载的模型进行问答，大模型会进行多轮回答，尽可能完善项目开发相关文档输出和代码输出。
 
+![](images/全流程项目设计和开发.png)
+
+
 ## 后端项目：src/backendProject/llmService
 
 后端集成ollama模型部署和调用功能，支持问答历史保存文件、插入到mangodb。
@@ -139,6 +142,3 @@ def ollama_stream(prompt, target_model, subfix):
         logger.info("保存成功")
 
 ```
-
-
-
