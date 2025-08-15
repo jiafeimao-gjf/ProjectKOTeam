@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import QnAPage from './pages/QnAPage.vue'
+import QnAv2 from './components/QnAv2.vue'
 import ProjectEngine from './components/ProjectEngine.vue'
 import CustomProjectEngine from './components/CustomProjectEngine.vue'
 import SoftwarerojectEngine from './components/SoftwareProjectEngine.vue'
@@ -12,12 +13,14 @@ const mode = ref('qna') // 默认问答模式
   <div id="app">
     <div class="mode-switch">
       <button :class="{ active: mode === 'qna' }" @click="mode = 'qna'">问答模式</button>
+      <button :class="{ active: mode === 'qnav2' }" @click="mode = 'qnav2'">问答模式v2</button>
       <button :class="{ active: mode === 'project' }" @click="mode = 'project'">软件项目模式v1</button>
       <button :class="{ active: mode === 'customproject' }" @click="mode = 'customproject'">自定义项目模式</button>
       <button :class="{ active: mode === 'softwareproject' }" @click="mode = 'softwareproject'">软件项目模式v2</button>
 
     </div>
     <QnAPage v-if="mode === 'qna'" />
+    <QnAv2 v-if="mode === 'qnav2'" />
     <ProjectEngine v-if="mode === 'project'" />
     <CustomProjectEngine v-if="mode === 'customproject'" />
     <SoftwarerojectEngine v-if="mode === 'softwareproject'" />
