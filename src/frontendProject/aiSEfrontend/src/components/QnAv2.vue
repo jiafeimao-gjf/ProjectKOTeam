@@ -1,9 +1,6 @@
 <template>
   <div class="qna-page">
-    <h2>本地agent助手</h2>
-    <div>
-      <h3>对话记录</h3>
-    </div>
+    <h3>本地双agent助手对话助手</h3>
     <div class="answer" id="md">
       <!-- 加载中提示 -->
       <span v-if="loading">正在生成对话...</span>
@@ -14,29 +11,53 @@
         <div class="bubble" v-html="renderMarkdown(msg.text)"></div>
       </div>
     </div>
-    <div class="input-area">
-      <p>模型1角色预设:</p>
-      <!-- 问题输入框 -->
-      <input v-model="question" placeholder="输入预设内容..." />
-      <!-- 模型选择下拉框，始终可见所有模型 -->
-      <select v-model="selectedModel" class="model-select">
-        <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
-      </select>
-      <!-- 提交按钮，加载时禁用 -->
-      <button @click="startConversation" :disabled="loading">开始双Agent对话</button>
-    </div>
-    <div class="input-area">
-      <p>模型2角色预设:</p>
-      <!-- 问题输入框 -->
-      <input v-model="question2" placeholder="输入预设内容..." />
-      <!-- 模型选择下拉框，始终可见所有模型 -->
-      <select v-model="selectedModel2" class="model-select">
-        <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
-      </select>
-      <!-- 对话轮数，可配置 -->
-      <label>轮数：</label>
-      <input type="number" min="1" max="50" v-model.number="turns"
-        style="width:80px;padding:8px;border-radius:6px;border:1px solid #ccc;background:#fff;" />
+    <div class="bottom-bar">
+      <div class="bar-row">
+        <div class="input-area">
+          <p>模型1角色预设:</p>
+          <!-- 问题输入框 -->
+          <input v-model="question" placeholder="输入预设内容..." />
+          <!-- 模型选择下拉框，始终可见所有模型 -->
+          <select v-model="selectedModel" class="model-select">
+            <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="input-area">
+          <p>模型2角色预设:</p>
+          <!-- 问题输入框 -->
+          <input v-model="question2" placeholder="输入预设内容..." />
+          <!-- 模型选择下拉框，始终可见所有模型 -->
+          <select v-model="selectedModel2" class="model-select">
+            <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="input-area">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" v-model="model3Enabled" /> 启用模型3
+          </label>
+          <p style="margin-left:6px">模型3角色预设:</p>
+          <!-- 问题输入框 -->
+          <input v-model="question3" :disabled="!model3Enabled" placeholder="输入预设内容..." />
+          <!-- 模型选择下拉框，始终可见所有模型 -->
+          <select v-model="selectedModel3" class="model-select" :disabled="!model3Enabled">
+            <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="bar-row control-row">
+        <div class="control-group">
+          <label style="margin-right:8px">轮数：</label>
+          <input type="number" min="1" max="50" v-model.number="turns" class="turns-input" />
+        </div>
+        <div class="control-group">
+          <button @click="startConversation" :disabled="loading">开始双Agent对话</button>
+          <button @click="stopConversation" style="margin-left:8px; background:#f55;">停止对话</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -67,11 +88,20 @@ const currentModel = 1
 
 // SSE 事件源对象
 let eventSource = null
+// 用于管理所有流式连接，便于批量关闭
+const eventSources = []
+// 停止标志，用于中断正在运行的对话
+const stopRequested = ref(false)
 
 // 对话消息列表：{ speaker: 'Agent1'|'Agent2', text: string }
 const messages = ref([])
 // 对话轮数（每轮包含双方各一次回复）
 const turns = ref(3)
+
+// 模型3 相关
+const question3 = ref('')
+const selectedModel3 = ref('')
+const model3Enabled = ref(false)
 
 // 自动滚动到最新消息
 watch(messages, async () => {
@@ -109,9 +139,19 @@ async function fetchAnswerOnce(prompt, model, idx) {
       }
       const streamUrl = await res.text()
       const es = new EventSource(streamUrl)
+      // 注册用于批量关闭
+      eventSources.push(es)
       es.onmessage = (event) => {
+        if (stopRequested.value) {
+          // 用户请求停止，关闭连接并返回已接收部分
+          try { es.close() } catch (e) { }
+          resolve(full)
+          return
+        }
         if (event.data === '[DONE]') {
           es.close()
+          // 从列表中移除
+          const si = eventSources.indexOf(es); if (si >= 0) eventSources.splice(si, 1)
           messages.value[idx].text = full
           resolve(full)
           return
@@ -130,6 +170,7 @@ async function fetchAnswerOnce(prompt, model, idx) {
       es.onerror = (e) => {
         console.error('SSE error', e)
         es.close()
+        const si = eventSources.indexOf(es); if (si >= 0) eventSources.splice(si, 1)
         messages.value[idx].text = messages.value[idx].text || '流式接收出错'
         resolve(messages.value[idx].text)
       }
@@ -146,6 +187,7 @@ async function fetchAnswerOnce(prompt, model, idx) {
 async function startConversation() {
   messages.value = []
   loading.value = true
+  stopRequested.value = false
   if (!question.value.trim() || !question2.value.trim()) {
     alert('请为双方都填写初始预设内容（两个输入框）')
     loading.value = false
@@ -153,25 +195,55 @@ async function startConversation() {
   }
 
   // 初始消息
+  let lastText = ''
   messages.value.push({ speaker: 'Agent1', text: question.value + '，我的模型是：' + selectedModel.value })
   messages.value.push({ speaker: 'Agent2', text: question2.value + '，我的模型是：' + selectedModel2.value })
+  if (model3Enabled.value) {
+    messages.value.push({ speaker: 'Agent3', text: question3.value + '，我的模型是：' + selectedModel3.value })
+    lastText = question3.value
+  } else {
+    lastText = question2.value
+  }
 
   // 当前上下文 prompt：取最后一条消息的 text 作为 next prompt
   let lastFromAgent = 'Agent2'
-  let lastText = question2.value
-
+  lastText = question2.value
   for (let i = 0; i < turns.value; i++) {
+    if (stopRequested.value) break
     // Agent1 回答（流式）
-    const prompt1 = question.value + `，基于对方的内容：\n${lastText}\n，结合情景与之对话`
+    const prompt1 = question.value + `，基于\n${lastText}\n，结合情景，完成自己输出自己要做的内容`
     const idx1 = messages.value.push({ speaker: 'Agent1', text: '' }) - 1
     const resp1 = await fetchAnswerOnce(prompt1, selectedModel.value, idx1)
     lastText = resp1
+    if (stopRequested.value) break
 
     // Agent2 回答（流式）
-    const prompt2 = question2.value + `，基于对方的内容：\n${lastText}\n，结合情景与之对话。`
+
+    // 结束时清理所有 eventSources
+    try { eventSources.forEach(es => es.close()) } catch (e) { }
+    eventSources.length = 0
+    loading.value = false
+    const prompt2 = question2.value + `，基于\n${lastText}\n，结合情景，完成自己输出自己要做的内容`
+
+    function stopConversation() {
+      stopRequested.value = true
+      // 立即关闭所有 EventSource
+      try { eventSources.forEach(es => es.close()) } catch (e) { }
+      eventSources.length = 0
+      loading.value = false
+    }
     const idx2 = messages.value.push({ speaker: 'Agent2', text: '' }) - 1
     const resp2 = await fetchAnswerOnce(prompt2, selectedModel2.value, idx2)
     lastText = resp2
+    // Agent3 回答（可选，流式）
+    if (model3Enabled.value) {
+      // 取最近两条消息（通常是 Agent1 和 Agent2 的回复），先让 Agent3 做简短总结再回答
+      const recent = messages.value.slice(-2).map(m => `${m.speaker}: ${m.text}`).join('\n')
+      const prompt3 = `${question3.value}\n\n请先用不少于500字浓缩总结下面两条内容的要点（要点式列出）， 包裹总结内容：\n${recent}\n\n 结合情景，完成自己输出自己要做的内容。`;
+      const idx3 = messages.value.push({ speaker: 'Agent3', text: '' }) - 1
+      const resp3 = await fetchAnswerOnce(prompt3, selectedModel3.value, idx3)
+      lastText = resp3
+    }
   }
 
   loading.value = false
@@ -268,6 +340,7 @@ onMounted(async () => {
     if (modelList.value.length > 0) {
       selectedModel.value = modelList.value[0]
       selectedModel2.value = modelList.value[1] || modelList.value[0]
+      selectedModel3.value = modelList.value[2] || modelList.value[0]
     }
   } catch (e) {
     // 如果接口异常，使用默认模型列表
@@ -283,6 +356,7 @@ onMounted(async () => {
     ]
     selectedModel.value = modelList.value[0]
     selectedModel2.value = modelList.value[1] || modelList.value[0]
+    selectedModel3.value = modelList.value[2] || modelList.value[0]
   }
 })
 </script>
@@ -324,30 +398,18 @@ h2 {
 
 /* 答案区域样式 */
 .answer {
-  width: 80vw;
-  /* 答案区域宽度为视口的 80% */
-  flex: 1;
-  /* 占据剩余空间，保证内容区自适应高度 */
-  margin-bottom: 24px;
-  /* 底部留白 */
-  font-size: 1.1em;
-  /* 字体稍大 */
-  min-height: 200px;
-  /* 最小高度，防止内容太少时塌陷 */
+  width: 80%;
+  max-width: 1200px;
+  height: 480px;
+  margin: 24px auto;
+  font-size: 1em;
   white-space: pre-wrap;
-  /* 保留空格和换行，适合 markdown 内容 */
   background: #fff;
-  /* 白色背景，突出内容区 */
   padding: 24px;
-  /* 内边距，内容不贴边 */
   border-radius: 8px;
-  /* 圆角，提升美观 */
   box-sizing: border-box;
-  /* 让 padding 包含在 width 内 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  /* 轻微阴影，提升层次感 */
   overflow-y: auto;
-  /* 内容超出时可滚动 */
 }
 
 /* 输入区域样式 */
@@ -362,8 +424,85 @@ h2 {
   /* 输入框、下拉框和按钮之间的间距 */
   align-items: center;
   /* 垂直居中 */
-  margin-bottom: 48px;
+  margin-bottom: 12px;
   /* 底部留白 */
+}
+
+/* 将最后一个输入区域固定在底部并居中 */
+
+/* 底部固定容器，包含所有输入区域 */
+.bottom-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  width: 80%;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  z-index: 40;
+}
+
+.bottom-bar .bar-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.bottom-bar .input-area {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 0;
+}
+
+.control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.turns-input {
+  flex: 1;
+  padding: 6px;
+  margin-left: 8px;
+  margin-right: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+@media (max-width: 800px) {
+  .bottom-bar {
+    width: 94%;
+    padding: 10px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bottom-bar .input-area {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .control-row {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
 }
 
 .message-item {
@@ -384,6 +523,7 @@ h2 {
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   white-space: pre-wrap;
+  font-size: 0.98em;
 }
 
 .message-item.agent1 {
@@ -404,6 +544,15 @@ h2 {
   background: #fff6ea;
   color: #4a2b00;
   border-top-right-radius: 4px;
+}
+
+.message-item.agent3 {
+  align-items: center;
+}
+
+.message-item.agent3 .bubble {
+  background: #f3f0ff;
+  color: #2f1652;
 }
 
 /* 输入框样式 */
