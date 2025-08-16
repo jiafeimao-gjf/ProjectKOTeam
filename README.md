@@ -76,7 +76,9 @@ python app.py
 
 采用一问一答的模式，支持选择不同的本地下载的模型进行问答。
 
-![](images/本地agent助手问答.png)
+![](images/多模型对话设置.png)
+![](images/多模型对话.png)
+![](images/三模型对话.png)
 
 ### 软件开发链式回答功能V1：
 
