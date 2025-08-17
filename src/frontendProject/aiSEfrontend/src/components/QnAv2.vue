@@ -355,8 +355,8 @@ onMounted(async () => {
       'gemma3:27b'
     ]
     selectedModel.value = modelList.value[0]
-    selectedModel2.value = modelList.value[1] || modelList.value[0]
-    selectedModel3.value = modelList.value[2] || modelList.value[0]
+    selectedModel2.value = modelList.value[0]
+    selectedModel3.value = modelList.value[0]
   }
 })
 </script>
@@ -398,9 +398,9 @@ h2 {
 
 /* 答案区域样式 */
 .answer {
-  width: 80%;
-  max-width: 1200px;
-  height: 480px;
+  min-height: 20vh;
+  min-width: 80vw;
+  max-width: 85vw;
   margin: 24px auto;
   font-size: 1em;
   white-space: pre-wrap;
@@ -432,15 +432,12 @@ h2 {
 
 /* 底部固定容器，包含所有输入区域 */
 .bottom-bar {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 18px;
+  text-align: center;
+  margin-top: 20px;
   width: 80%;
   max-width: 1100px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
   justify-content: center;
   background: rgba(255, 255, 255, 0.95);
   padding: 12px 16px;
@@ -526,33 +523,35 @@ h2 {
   font-size: 0.98em;
 }
 
+/* 消息项 - 客服1（左对齐） */
 .message-item.agent1 {
-  align-items: flex-start;
+  align-items: flex-start; /* 子元素顶部对齐，整体左对齐布局 */
 }
 
+/* 客服1消息气泡样式 */
 .message-item.agent1 .bubble {
-  background: #eef6ff;
-  color: #062a4f;
-  border-top-left-radius: 4px;
+  background: #eef6ff; /* 浅蓝色背景 */
+  color: #062a4f;     /* 深蓝色文字 */
+  border-top-left-radius: 4px; /* 仅左上角圆角 */
+  max-width: 60vw;
 }
 
+/* 消息项 - 客服2（右对齐） */
 .message-item.agent2 {
-  align-items: flex-end;
+  align-items: flex-end; /* 子元素顶部对齐，整体右对齐布局 */
 }
 
+/* 客服2消息气泡样式 */
 .message-item.agent2 .bubble {
-  background: #fff6ea;
-  color: #4a2b00;
-  border-top-right-radius: 4px;
+  background: #fff6ea; /* 浅橙色背景 */
+  color: #4a2b00;     /* 深橙色文字 */
+  border-top-right-radius: 4px; /* 仅右上角圆角 */
+  max-width: 60vw;
 }
 
+/* 消息项 - 客服3（居中对齐） */
 .message-item.agent3 {
-  align-items: center;
-}
-
-.message-item.agent3 .bubble {
-  background: #f3f0ff;
-  color: #2f1652;
+  align-items: flex-end; /* 子元素垂直居中 */
 }
 
 /* 输入框样式 */

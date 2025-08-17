@@ -2,12 +2,12 @@
   <div class="qna-page">
     <h2>本地agent助手</h2>
     <div class="answer" id="md">
-      <div v-for="(qa, index) in QAHistory" :key="index">
-        <h2 style="text-align: left">你：</h2>
+      <div v-for="(qa, index) in QAHistory" :key="index" class="qa-item">
+        <p style="text-align: left">你：</p>
         <div class="qa-question">
           <div class="meta"><strong>{{ qa.question }}</strong></div>
         </div>
-         <h2 style="text-align: right">agent回答：</h2>
+         <p style="text-align: right">agent回答：</p>
         <div class="bubble">
           <div class="meta"><strong>模型: {{ qa.model }} </strong></div>
           <!-- 加载中提示 -->
@@ -237,7 +237,7 @@ h2 {
 }
 
 .answer .bubble {
-  align-items: flex-start;
+  align-items: flex-end;
   width: auto;
   padding: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
