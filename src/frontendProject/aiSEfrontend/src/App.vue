@@ -34,18 +34,14 @@ const mode = ref('qna') // 默认问答模式
 <style scoped>
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: left;
+  text-align: center;
   color: #2c3e50;
-  margin: 0%;
-  padding: 0%;
   height: 100vh;
 }
 
 .main-layout {
   display: flex;
-  height: 100%;
+  height: 100vh;
 }
 
 .mode-switch {
@@ -77,7 +73,14 @@ const mode = ref('qna') // 默认问答模式
 
 .content-area {
   flex: 1;
-  padding: 24px;
+  padding: 0px;
   overflow: auto;
+  height: 100%;
+}
+
+/* 确保所有子组件都能自适应显示 */
+.content-area > div {
+  height: 100%;
+  width: 100%;
 }
 </style>
