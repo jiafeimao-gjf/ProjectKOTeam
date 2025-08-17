@@ -1,0 +1,61 @@
+@startuml
+'skinparam backgroundColor #FEFEFE
+'skinparam state {
+'    BackgroundColor<<Final>> #LightGreen
+'    BackgroundColor<<Error>> #LightCoral
+'    BackgroundColor<<Intermediate>> #LightSkyBlue
+'    BorderColor Black
+'    FontSize 14
+'}
+
+[*] --> q0 : 初始状态
+
+state q0 as "q0: Idle\n等待输入" <<Intermediate>>
+
+q0 --> q1 : 收到用户需求
+
+state q1 as "q1: 需求分析\n(Requirement Analysis)" <<Intermediate>>
+q1 --> q2 : 需求结构化完成\n验证通过
+
+state q2 as "q2: 系统设计\n(System Design)" <<Intermediate>>
+q2 --> q3 : 架构/接口设计完成\n验证通过
+
+state q3 as "q3: 编码实现\n(Code Implementation)" <<Intermediate>>
+q3 --> q4 : 代码生成完成\n语法检查通过
+
+state q4 as "q4: 测试生成\n(Test Generation)" <<Intermediate>>
+q4 --> q5 : 测试代码生成\n格式合规
+
+state q5 as "q5: 测试执行与验证\n(Testing & Validation)" <<Intermediate>>
+q5 --> q6 : 所有测试通过
+
+q5 --> q3 : 测试失败\n返回修复代码
+
+state q6 as "q6: 文档生成\n(Documentation)" <<Intermediate>>
+q6 --> q7 : 文档生成完成
+
+state q7 as "q7: 完成\n(Success)" <<Final>>
+q7 --> [*]
+
+state q8 as "q8: 错误/人工干预\n(Error / Human Intervention)" <<Error>>
+q8 --> q1 : 修正需求
+q8 --> q2 : 重新设计
+q8 --> q3 : 修复代码
+q8 --> q4 : 调整测试
+q8 --> q6 : 补全文档
+q8 --> q7 : 人工确认完成
+
+' --- 错误或异常转移 ---
+q1 --> q8 : 需求模糊无法解析
+q2 --> q8 : 设计冲突或不一致
+q3 --> q8 : 代码存在严重漏洞
+q4 --> q8 : 测试覆盖不足
+q6 --> q8 : 文档信息缺失
+
+' --- 可选：人工主动干预 ---
+q0 --> q8 : 人工启动审核
+q1 --> q8 : 请求人工确认需求
+q2 --> q8 : 架构需评审
+q5 --> q8 : 测试结果存疑
+
+@enduml
