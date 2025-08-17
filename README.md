@@ -4,6 +4,14 @@
 
 接触大模型辅助，规划功能点，利用本地部署模型，测试功能，
 
+## 子项目：基于状态机的prompt驱动项目开发
+
+![状态机图](src/backendProject/AISE/agent驱动开发的有限自动机.png)
+
+项目目录：src/backendProject/AISE
+
+
+
 # 快速开始，动手本地部署体验
 - 前置准备
     - ollama下载和安装，[链接](https://ollama.com/library)
