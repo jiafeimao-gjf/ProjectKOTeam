@@ -232,12 +232,11 @@ h2 {
   border-radius: 6px; /* 圆角，提升美观 */
   background: #f8f8fa; /* 浅灰背景，区分于内容区 */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* 轻微阴影，提升层次感 */
-  text-align: left;
   margin-top: 10px;
 }
 
 .answer .bubble {
-  align-items: flex-end;
+  align-items: flex-start;
   width: auto;
   padding: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
@@ -246,7 +245,7 @@ h2 {
   background: #eef6ff;
   color: #062a4f;
   border-top-left-radius: 4px;
-  text-align: right;
+  text-align: left;
 }
 
 /* 输入区域样式 */
