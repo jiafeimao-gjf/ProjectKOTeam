@@ -339,8 +339,8 @@ onMounted(async () => {
     // 默认选中第一个模型
     if (modelList.value.length > 0) {
       selectedModel.value = modelList.value[0]
-      selectedModel2.value = modelList.value[1] || modelList.value[0]
-      selectedModel3.value = modelList.value[2] || modelList.value[0]
+      selectedModel2.value = modelList.value[0]
+      selectedModel3.value = modelList.value[0]
     }
   } catch (e) {
     // 如果接口异常，使用默认模型列表
