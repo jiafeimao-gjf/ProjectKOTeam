@@ -1,15 +1,17 @@
 <template>
   <div class="qna-page">
     <h2>本地agent助手</h2>
-    <div>
-      <h3>您的问题：{{ question }}</h3>
-    </div>
-    <div class="answer" id="md">
-      <!-- 加载中提示 -->
-      <span v-if="loading">正在生成答案...</span>
-      <!-- 渲染 markdown 格式的答案 -->
-      <div v-html="renderedAnswer"></div>
-    </div>
+    <div class="history">
+        <!-- 历史问答列表 -->
+        <div v-for="(item, idx) in history" :key="item.id" class="qa-item">
+          <h3>问题 {{ idx + 1 }}：{{ item.question }}</h3>
+          <div class="meta">模型：{{ item.model }} · 提问时间：{{ item.timestamp }}</div>
+          <div class="answer" :id="'answer-' + item.id">
+            <span v-if="item.loading">正在生成答案...</span>
+            <div v-html="renderMarkdown(item.answer)" :ref="el => { if (el) answerElements[item.id] = el }"></div>
+          </div>
+        </div>
+      </div>
     <div class="input-area">
       <!-- 问题输入框 -->
       <input v-model="question" placeholder="请输入你的问题..." />
@@ -35,13 +37,15 @@ import 'highlight.js/styles/github.css'
 
 // 用户输入的问题
 const question = ref('')
-// 流式追加的答案内容
-const answer = ref('')
-// 是否正在加载
-const loading = ref(false)
+// 每一轮问答历史（不会因为下一次问答而被清空）
+const history = ref([]) // [{id, question, answer, model, loading, timestamp}]
+// 全局是否有正在流式生成的轮次（用于禁用提交按钮）
+const anyLoading = computed(() => history.value.some(h => h.loading))
 // 选中的模型，支持手动输入
 const selectedModel = ref('')
 const modelList = ref([]) // 模型列表
+// 用于存储答案元素的引用
+const answerElements = ref({})
 
 // SSE 事件源对象
 let eventSource = null
@@ -58,73 +62,91 @@ marked.setOptions({
   }
 })
 
-// 响应式渲染 markdown 内容
-const renderedAnswer = computed(() => marked.parse(answer.value))
+// 渲染指定文本为 markdown
+function renderMarkdown(text) {
+  return marked.parse(text || '')
+}
 
-// 每次 markdown 内容变化后，自动高亮代码块
-watch(renderedAnswer, async () => {
+// 当历史中任意答案变化时，下一次 DOM 更新后高亮代码块
+watch(() => history.value.map(h => h.answer), async () => {
   await nextTick()
-  document.querySelectorAll('#md pre code').forEach(block => hljs.highlightElement(block))
-})
+  // 为每个答案区域单独处理代码高亮
+  Object.values(answerElements.value).forEach(element => {
+    if (element) {
+      element.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block)
+      })
+    }
+  })
+}, { deep: true })
 
 // 提交问题，流式获取答案
 function askQuestion() {
-  answer.value = ''
-  loading.value = true
   if (!question.value.trim()) {
     alert('不允许空问题，请输入详细的问题哦！')
-    loading.value = false
     return
   }
-  // 关闭旧的 SSE 连接
-  if (eventSource) {
-    eventSource.close()
+
+  // 创建新的轮次并加入历史，保留以前所有内容
+  const entry = {
+    id: Date.now(),
+    question: question.value,
+    answer: '',
+    model: selectedModel.value,
+    loading: true,
+    timestamp: new Date().toLocaleString()
   }
-  // 使用 fetch 先 POST，获取流式 EventSource 通道
+  history.value.push(entry)
+
+  // 关闭旧的 SSE 连接（如果存在）
+  if (eventSource) {
+    try { eventSource.close() } catch (e) {}
+  }
+
+  // POST 获取流式 EventSource 通道地址，然后对该轮次进行流式追加
   fetch('/api/chat_start', {
     method: 'post',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      prompt: question.value,
-      model: selectedModel.value
+      prompt: entry.question,
+      model: entry.model
     })
   }).then(res => {
     if (!res.ok) throw new Error('接口请求失败')
-    // 假设后端返回一个流式通道地址
     return res.text()
   }).then((streamUrl) => {
     eventSource = new EventSource(streamUrl)
     eventSource.onmessage = (event) => {
-      // 检查流式消息是否为结束标志
       if (event.data === '[DONE]') {
-        loading.value = false
-        eventSource.close()
+        entry.loading = false
+        try { eventSource.close() } catch (e) {}
         return
       }
       try {
         const data = JSON.parse(event.data)
-        if (data.text) {
-          answer.value += data.text
-        }
+        if (data.text) entry.answer += data.text
       } catch (e) {
-        answer.value += event.data
+        entry.answer += event.data
       }
     }
     eventSource.onerror = () => {
-      loading.value = false
-      eventSource.close()
+      entry.loading = false
+      try { eventSource.close() } catch (e) {}
     }
     eventSource.onopen = () => {
-      loading.value = true
+      entry.loading = true
     }
     eventSource.addEventListener('end', () => {
-      loading.value = false
-      eventSource.close()
+      entry.loading = false
+      try { eventSource.close() } catch (e) {}
     })
   }).catch(() => {
-    loading.value = false
-    answer.value = '接口调用失败，请稍后重试。'
+    entry.loading = false
+    entry.answer = '接口调用失败，请稍后重试。'
   })
+
+  // 清空输入框（保留历史）
+  question.value = ''
 }
 
 // 页面初始化时获取模型列表
@@ -135,7 +157,7 @@ onMounted(async () => {
     modelList.value = data.models || []
     // 默认选中第一个模型
     if (modelList.value.length > 0) {
-      selectedModel.value = modelList.value[6]
+      selectedModel.value = modelList.value[0]
     }
   } catch (e) {
     // 如果接口异常，使用默认模型列表
