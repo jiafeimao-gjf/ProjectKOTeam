@@ -249,4 +249,17 @@ button:disabled {
   margin-bottom: 12px;
   margin-top: 20px;
 }
+
+.prompts-list {
+  background: #eaa08d;
+  padding: 2px;
+}
+
+.prompt-item {
+  font-size: 1em;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 2px;
+  background: #ddccc8;
+}
 </style>
