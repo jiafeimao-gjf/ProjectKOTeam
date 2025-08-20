@@ -24,8 +24,24 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    runtimeOnly 'com.mysql:mysql-connector-j'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // MCP 核心依赖
+//    implementation 'io.modelcontextprotocol:mcp-client:1.0.0'
+//    implementation 'io.modelcontextprotocol:mcp-spec:1.0.0'
+//    implementation 'io.modelcontextprotocol:mcp-transport-sse:1.0.0'
+
+    // JSON 解析
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
+    // 响应式编程
+    implementation 'io.projectreactor:reactor-core:3.5.9'
+
+    // 大模型 SDK（示例）
+//    implementation 'com.openai:openai-client:0.27.0'
 }
 
 tasks.named('test') {

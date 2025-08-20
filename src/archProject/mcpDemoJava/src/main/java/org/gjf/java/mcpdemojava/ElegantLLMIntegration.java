@@ -1,6 +1,9 @@
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.spec.McpSchema;
+package org.gjf.java.mcpdemojava;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gjf.java.mcpdemojava.mcpclient.McpSyncClient;
+import org.gjf.java.mcpdemojava.mcpschema.McpSchema;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +30,7 @@ public class ElegantLLMIntegration {
 
         if (decision.needTool()) {
             System.out.println("大模型决策：需要调用工具 - " + decision.reasoning());
-            
+
             // 2. 选择最合适的工具（基于工具描述和能力）
             String toolSelection = llm.generate(buildToolSelectionPrompt(userQuery, decision.reasoning()));
             String toolName = extractToolName(toolSelection);
@@ -40,7 +43,7 @@ public class ElegantLLMIntegration {
 
             // 4. 调用工具并获取结果
             String toolResult = callTool(toolName, params);
-            
+
             // 5. 生成最终回答
             return llm.generate(buildFinalAnswerPrompt(userQuery, toolResult));
         } else {
@@ -52,58 +55,58 @@ public class ElegantLLMIntegration {
     // 构建更智能的工具需求判断提示词
     private String buildToolNeedPrompt(String query) {
         return """
-        请分析以下用户问题是否需要调用外部工具获取信息，并以JSON格式返回决策结果：
-        {
-            "needTool": boolean,
-            "reasoning": "详细说明判断依据，包括是否属于实时信息、是否超出你的知识截止日期、是否需要专业数据等"
-        }
-        
-        用户问题：%s
-        你的知识截止日期：2023年10月
-        注意：如果问题涉及2023年10月之后的事件、实时变化的数据（天气、股价等）、需要最新统计的信息，必须调用工具。
-        如果是常识性问题、历史事实（2023年10月前）、不需要实时数据的问题，可以不调用工具。
-        """.formatted(query);
+                请分析以下用户问题是否需要调用外部工具获取信息，并以JSON格式返回决策结果：
+                {
+                    "needTool": boolean,
+                    "reasoning": "详细说明判断依据，包括是否属于实时信息、是否超出你的知识截止日期、是否需要专业数据等"
+                }
+                        
+                用户问题：%s
+                你的知识截止日期：2023年10月
+                注意：如果问题涉及2023年10月之后的事件、实时变化的数据（天气、股价等）、需要最新统计的信息，必须调用工具。
+                如果是常识性问题、历史事实（2023年10月前）、不需要实时数据的问题，可以不调用工具。
+                """.formatted(query);
     }
 
     // 构建工具选择提示词
     private String buildToolSelectionPrompt(String query, String reasoning) {
         return """
-        根据以下信息，从可用工具中选择最适合回答用户问题的工具，只需返回工具名称：
-        
-        用户问题：%s
-        决策依据：%s
-        可用工具及功能：
-        %s
-        """.formatted(query, reasoning, formatToolsForLLM());
+                根据以下信息，从可用工具中选择最适合回答用户问题的工具，只需返回工具名称：
+                        
+                用户问题：%s
+                决策依据：%s
+                可用工具及功能：
+                %s
+                """.formatted(query, reasoning, formatToolsForLLM());
     }
 
     // 构建参数生成提示词
     private String buildParameterGenerationPrompt(String query, String toolName, String schema) {
         return """
-        请为工具"%s"生成符合以下JSON Schema的调用参数，用于回答用户问题：%s
-        
-        参数Schema：%s
-        
-        要求：
-        1. 严格遵循Schema格式，包含所有必填字段
-        2. 参数值需从用户问题中提取或合理推断
-        3. 只返回JSON内容，不添加其他说明
-        """.formatted(toolName, query, schema);
+                请为工具"%s"生成符合以下JSON Schema的调用参数，用于回答用户问题：%s
+                        
+                参数Schema：%s
+                        
+                要求：
+                1. 严格遵循Schema格式，包含所有必填字段
+                2. 参数值需从用户问题中提取或合理推断
+                3. 只返回JSON内容，不添加其他说明
+                """.formatted(toolName, query, schema);
     }
 
     // 构建最终回答提示词
     private String buildFinalAnswerPrompt(String query, String toolResult) {
         return """
-        请基于以下信息，用自然语言流畅、准确地回答用户问题：
-        
-        用户问题：%s
-        工具返回的相关信息：%s
-        
-        要求：
-        1. 只使用提供的工具信息进行回答
-        2. 不要编造信息，如果信息不足请说明
-        3. 语言简洁明了，符合中文表达习惯
-        """.formatted(query, toolResult);
+                请基于以下信息，用自然语言流畅、准确地回答用户问题：
+                        
+                用户问题：%s
+                工具返回的相关信息：%s
+                        
+                要求：
+                1. 只使用提供的工具信息进行回答
+                2. 不要编造信息，如果信息不足请说明
+                3. 语言简洁明了，符合中文表达习惯
+                """.formatted(query, toolResult);
     }
 
     // 从MCP服务器获取可用工具列表
@@ -111,7 +114,7 @@ public class ElegantLLMIntegration {
         try {
             McpSchema.ListToolsResult result = mcpClient.listTools();
             return result.tools().stream()
-                    .map(tool -> tool.name() + ": " + tool.description())
+                    .map(tool -> tool.name + ": " + tool.description)
                     .toList();
         } catch (Exception e) {
             System.err.println("获取工具列表失败: " + e.getMessage());
@@ -133,7 +136,7 @@ public class ElegantLLMIntegration {
         try {
             McpSchema.ListToolsResult result = mcpClient.listTools();
             return result.tools().stream()
-                    .filter(t -> t.name().equals(toolName))
+                    .filter(t -> t.name.equals(toolName))
                     .findFirst()
                     .map(McpSchema.Tool::parameters)
                     .orElse("{}");
@@ -179,7 +182,7 @@ public class ElegantLLMIntegration {
             );
 
             McpSchema.CallToolResult result = mcpClient.callTool(request);
-            return ((McpSchema.TextContent) result.content().get(0)).text();
+            return ((McpSchema.TextContent) result.contents.getFirst()).text;
         } catch (Exception e) {
             System.err.println("工具调用失败: " + e.getMessage());
             return "工具调用失败，无法获取相关信息";
@@ -187,17 +190,7 @@ public class ElegantLLMIntegration {
     }
 
     // 工具决策数据类
-    private static class ToolDecision {
-        private final boolean needTool;
-        private final String reasoning;
-
-        public ToolDecision(boolean needTool, String reasoning) {
-            this.needTool = needTool;
-            this.reasoning = reasoning;
-        }
-
-        public boolean needTool() { return needTool; }
-        public String reasoning() { return reasoning; }
+    private record ToolDecision(boolean needTool, String reasoning) {
     }
 
     // 大模型接口
@@ -229,15 +222,15 @@ public class ElegantLLMIntegration {
                         "internet_search",
                         "搜索互联网获取最新信息",
                         """
-                        {
-                            "type": "object",
-                            "properties": {
-                                "query": {"type": "string", "description": "搜索关键词"},
-                                "language": {"type": "string", "description": "语言，默认中文"}
-                            },
-                            "required": ["query"]
-                        }
-                        """
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "query": {"type": "string", "description": "搜索关键词"},
+                                        "language": {"type": "string", "description": "语言，默认中文"}
+                                    },
+                                    "required": ["query"]
+                                }
+                                """
                 );
                 return new McpSchema.ListToolsResult(List.of(searchTool));
             }
@@ -252,7 +245,9 @@ public class ElegantLLMIntegration {
                 );
             }
 
-            @Override public void closeGracefully() {}
+            @Override
+            public void closeGracefully() {
+            }
             // 其他必要方法实现...
         };
     }
@@ -260,25 +255,25 @@ public class ElegantLLMIntegration {
     // 创建模拟大模型
     private static LargeLanguageModel createMockLLM() {
         return prompt -> {
-            System.out.println("\n大模型处理提示: " + prompt.substring(0, 80) + "...");
-            
+            System.out.println("\n大模型处理提示: " + prompt.substring(0, Math.min(prompt.length(), 50)) + "...");
+
             // 模拟不同提示的返回结果
             if (prompt.contains("是否需要调用外部工具")) {
                 return """
-                {
-                    "needTool": true,
-                    "reasoning": "用户问题涉及2024年奥运会的开幕时间，我的知识截止到2023年10月，无法提供准确信息，需要调用工具获取最新数据"
-                }
-                """;
+                        {
+                            "needTool": true,
+                            "reasoning": "用户问题涉及2024年奥运会的开幕时间，我的知识截止到2023年10月，无法提供准确信息，需要调用工具获取最新数据"
+                        }
+                        """;
             } else if (prompt.contains("选择最适合回答用户问题的工具")) {
                 return "internet_search";
             } else if (prompt.contains("生成符合以下JSON Schema的调用参数")) {
                 return """
-                {
-                    "query": "2024年巴黎奥运会 开幕时间",
-                    "language": "zh-CN"
-                }
-                """;
+                        {
+                            "query": "2024年巴黎奥运会 开幕时间",
+                            "language": "zh-CN"
+                        }
+                        """;
             } else {
                 return "2024年巴黎奥运会的开幕时间是2024年7月26日，闭幕时间为8月11日。这是第33届夏季奥林匹克运动会，将在法国巴黎举办。";
             }
