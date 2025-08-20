@@ -10,12 +10,16 @@ description = 'mcpDemoJava'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 repositories {
+    maven {
+        url = uri('https://maven.aliyun.com/repository/public')
+    }
     mavenCentral()
+
 }
 
 dependencies {
