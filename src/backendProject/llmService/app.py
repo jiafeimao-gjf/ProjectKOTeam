@@ -41,7 +41,7 @@ def ollama_stream(prompt, target_model, subfix):
                                  stream=True):
         text = chunk.get("response", "")
         if text:
-            logger.info(text)
+            # logger.info(text)
             save_data["answer"] += text
             # SSE 数据格式必须是 "data: ...\n\n"
             yield f"data: {json.dumps({'text': text})}\n\n"
