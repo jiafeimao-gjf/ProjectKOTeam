@@ -191,6 +191,7 @@ public class ElegantLLMIntegration {
 
     // 工具决策数据类
     private record ToolDecision(boolean needTool, String reasoning) {
+
     }
 
     // 大模型接口
