@@ -9,7 +9,13 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:5888',
         changeOrigin: true,
-        rewrite: path => path.replace(/^\/api/, '')
+        rewrite: path => path.replace(/^\/api/, ''),
+        secure: false,
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            proxyReq.setHeader('Origin', 'http://127.0.0.1:5888');
+          });
+        }
       }
     }
   }

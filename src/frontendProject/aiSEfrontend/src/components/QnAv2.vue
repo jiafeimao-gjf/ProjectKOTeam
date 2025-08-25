@@ -7,8 +7,12 @@
       <!-- 渲染消息列表（Markdown） -->
       <div v-for="(msg, idx) in messages" :key="idx"
            :class="['message-item', getAgentName(msg.speaker)]">
-        <div class="meta"><strong>{{ msg.speaker }}</strong></div>
-        <div class="bubble" v-html="renderMarkdown(msg.text)"></div>
+        <div class="meta">
+          <strong>{{ msg.speaker }}</strong>
+          <button class="copy-btn" @click="copyMessage(idx)" title="复制消息">复制答案</button>
+          <span class="copied-msg" v-if="copiedId === idx">已复制</span>
+        </div>
+        <div class="bubble" v-html="renderMarkdown(msg.text)" :ref="el => messageEls[idx] = el"></div>
       </div>
     </div>
     <div class="bottom-bar">
@@ -95,6 +99,35 @@ const stopRequested = ref(false)
 
 // 对话消息列表：{ speaker: 'Agent1'|'Agent2', text: string }
 const messages = ref([])
+// refs to rendered message bubble elements for copying text
+const messageEls = ref([])
+// which message was recently copied (index)
+const copiedId = ref(null)
+
+// 复制消息到剪贴板，优先使用 navigator.clipboard
+async function copyMessage(idx) {
+  try {
+    const el = messageEls.value[idx]
+    if (!el) return
+    // 取渲染后的文本内容（去掉 HTML）
+    const text = el.innerText || el.textContent || ''
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      // 兼容回退
+      const ta = document.createElement('textarea')
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      ta.remove()
+    }
+    copiedId.value = idx
+    setTimeout(() => { if (copiedId.value === idx) copiedId.value = null }, 1500)
+  } catch (e) {
+    console.error('copy failed', e)
+  }
+}
 // 对话轮数（每轮包含双方各一次回复）
 const turns = ref(3)
 
@@ -527,6 +560,21 @@ h2 {
   font-size: 0.9em;
   color: #666;
   margin-bottom: 6px;
+}
+
+.copy-btn {
+  margin-left: 12px;
+  padding: 4px 8px;
+  font-size: 0.8em;
+  border-radius: 4px;
+  border: 1px solid #d0d7e6;
+  background: #859ae5;
+  cursor: pointer;
+}
+.copied-msg {
+  margin-left: 8px;
+  color: #2a8f3e;
+  font-size: 0.85em;
 }
 
 .message-item .bubble {
