@@ -33,7 +33,14 @@ current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
+
 def ollama_stream(prompt, target_model, subfix):
+    """
+    :param prompt: 输入的描述
+    :param target_model: 输入模型
+    :param subfix: 保存的后缀
+    :return:
+    """
     logger.info(f"ollama_stream: {prompt}, model: {target_model}")
     # 调用 ollama 流式生成
     save_data = {"model": target_model, "prompt": prompt, "answer": ""}
