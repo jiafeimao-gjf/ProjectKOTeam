@@ -10,6 +10,7 @@
 
 项目目录：src/backendProject/AISE
 
+## 子项目：MCP客户端-服务端框架 src/archProject/mcp
 
 
 # 快速开始，动手本地部署体验
