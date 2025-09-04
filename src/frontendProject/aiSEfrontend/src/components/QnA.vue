@@ -19,7 +19,7 @@
     </div>
     <div class="input-area">
       <!-- 问题输入框 -->
-      <input v-model="question" placeholder="请输入你的问题..."/>
+      <textarea v-model="question" placeholder="请输入你的问题..." class="question-input" ref="questionTextarea"></textarea>
       <!-- 模型选择下拉框，始终可见所有模型 -->
       <select v-model="selectedModel" class="model-select">
         <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
@@ -49,6 +49,7 @@ const selectedModel = ref('')
 const modelList = ref([]) // 模型列表
 
 const QAHistory = ref([])
+const questionTextarea = ref(null) // 文本域引用
 
 // SSE 事件源对象
 let eventSource = null
@@ -65,6 +66,22 @@ marked.setOptions({
   }
 })
 
+// 自动调整文本域高度
+function adjustTextareaHeight() {
+  const textarea = questionTextarea.value
+  if (textarea) {
+    textarea.style.height = 'auto'
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
+  }
+}
+
+// 监听问题输入变化，自动调整文本域高度
+watch(question, () => {
+  nextTick(() => {
+    adjustTextareaHeight()
+  })
+})
+
 function getLastAnswer() {
   if (QAHistory.value && QAHistory.value.length === 0) {
     return ''
@@ -78,11 +95,8 @@ function getRenderedAnswer(index) {
   return marked.parse(qaTemp.answer)
 }
 
-// 响应式渲染 markdown 内容 ，QAHistory 最后一个元素的答案
-const renderedAnswer = computed(() => marked.parse(getLastAnswer()))
-
 // 每次 markdown 内容变化后，自动高亮代码块
-watch(renderedAnswer, async () => {
+watch(QAHistory, async () => {
   await nextTick()
   document.querySelectorAll('#md pre code').forEach(block => hljs.highlightElement(block))
 })
@@ -104,6 +118,10 @@ function askQuestion() {
 
   QAHistory.value.push(qa)
 
+  // 清空输入框并重置高度
+  question.value = ''
+  adjustTextareaHeight()
+
   // 关闭旧的 SSE 连接
   if (eventSource) {
     eventSource.close()
@@ -113,7 +131,7 @@ function askQuestion() {
     method: 'post',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
-      prompt: question.value,
+      prompt: qa.question,
       model: selectedModel.value
     })
   }).then(res => {
@@ -144,7 +162,7 @@ function askQuestion() {
     }
   }).catch(() => {
     loading.value = false
-    answer.value = '接口调用失败，请稍后重试。'
+    QAHistory.value[QAHistory.value.length - 1].answer = '接口调用失败，请稍后重试。'
   })
 }
 
@@ -259,13 +277,17 @@ h2 {
 }
 
 /* 输入框样式 */
-input {
+.question-input {
   flex: 2; /* 输入框占较大空间 */
   padding: 12px; /* 内边距，提升输入体验 */
   font-size: 1em; /* 字体适中 */
   border-radius: 6px; /* 圆角 */
   border: 1px solid #ccc; /* 浅灰色边框 */
   background: #f8f8fa; /* 浅灰背景，区分于内容区 */
+  resize: vertical; /* 只允许垂直方向调整大小 */
+  min-height: 40px; /* 最小高度 */
+  max-height: 200px; /* 最大高度 */
+  font-family: inherit; /* 使用系统默认字体 */
 }
 
 /* 模型选择输入框样式 */
