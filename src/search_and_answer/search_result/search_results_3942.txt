@@ -1,0 +1,431 @@
+[
+  {
+    "kind": "customsearch#result",
+    "title": "早产- 症状与病因- 妙佑医疗国际",
+    "htmlTitle": "早产- 症状与病因- 妙佑医疗国际",
+    "link": "https://www.mayoclinic.org/zh-hans/diseases-conditions/premature-birth/symptoms-causes/syc-20376730",
+    "displayLink": "www.mayoclinic.org",
+    "snippet": "Nov 26, 2024 ... 早产是指婴儿出生过早，即分娩发生在孕37 周之前。典型妊娠持续约40 周 ... 帮助怀孕的治疗方法被称为人工辅助生育，包括体外受精。 不止一次 ...",
+    "htmlSnippet": "Nov 26, 2024 <b>...</b> 早产是指婴儿出生过早，即分娩发生在孕37 周之前。典型妊娠持续约40 周 ... 帮助<b>怀孕</b>的治疗方法被称为人工<b>辅助</b>生育，包括体外受精。 不止一次&nbsp;...",
+    "formattedUrl": "https://www.mayoclinic.org/zh-hans/diseases-conditions/.../syc-20376730",
+    "htmlFormattedUrl": "https://www.mayoclinic.org/zh-hans/diseases-conditions/.../syc-20376730",
+    "pagemap": {
+      "cse_thumbnail": [
+        {
+          "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCeYzUlVmyn46nLIv5qZ9m9AL2Bpj_nRO5vNzCJHLkHaa1yMYxSd1CD0M&s",
+          "width": "310",
+          "height": "163"
+        }
+      ],
+      "metatags": [
+        {
+          "application-name": " ",
+          "msapplication-tilecolor": "#FFFFFF",
+          "pocid": "CON-20376713",
+          "og:image": "https://www.mayoclinic.org/-/media/Web/GBS/Shared/Images/SocialMedia-Metadata/MC_OpenGraph_600x315.jpg",
+          "twitter:card": "summary",
+          "twitter:title": "早产 - 症状与病因 - 妙佑医疗国际",
+          "og:type": "article",
+          "og:site_name": "Mayo Clinic",
+          "person group": "Premature baby",
+          "subject": "Premature birth",
+          "og:title": "早产 - 症状与病因 - 妙佑医疗国际",
+          "msapplication-tileimage": "/-/media/web/gbs/shared/images/mstile-144x144.png",
+          "twitter:creator": "@mayoclinic",
+          "twitter:image": "https://www.mayoclinic.org/-/media/Web/GBS/Shared/Images/SocialMedia-Metadata/MC_TwitterCard_120x120.jpg",
+          "twitter:image:alt": "MayoClinic.org",
+          "twitter:site": "@mayoclinic",
+          "viewport": "width=device-width, initial-scale=1.0",
+          "content package": "Health information library",
+          "publishdate": "2024-11-26",
+          "og:url": "https://www.mayoclinic.org/zh-hans/diseases-conditions/premature-birth/symptoms-causes/syc-20376730",
+          "format-detection": "telephone=no",
+          "expected delivery channel": "Web",
+          "contentlanguage": "zh-Hans"
+        }
+      ],
+      "cse_image": [
+        {
+          "src": "https://www.mayoclinic.org/-/media/Web/GBS/Shared/Images/SocialMedia-Metadata/MC_OpenGraph_600x315.jpg"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "国家基本公共卫生服务规范（第三版）",
+    "htmlTitle": "国家基本公共卫生服务规范（第三版）",
+    "link": "https://www.nhc.gov.cn/ewebeditor/uploadfile/2017/04/20170417104506514.pdf",
+    "displayLink": "www.nhc.gov.cn",
+    "snippet": "... 孕中期和孕晚期对孕产妇. 各进行2 次随访。没有助产技术服务资质的基层医疗卫生 ... 2．孕周：填写此表时孕妇的怀孕周数。 3．孕次：怀孕的次数，包括本次妊娠。 4 ...",
+    "htmlSnippet": "... 孕中期和<b>孕晚期</b>对孕产妇. 各进行2 次随访。没有助产技术服务资质的基层医疗卫生 ... 2．孕周：填写此表时孕妇的怀孕周数。 3．孕次：怀孕的次数，包括本次妊娠。 4&nbsp;...",
+    "formattedUrl": "https://www.nhc.gov.cn/ewebeditor/uploadfile/.../20170417104506514.pdf",
+    "htmlFormattedUrl": "https://www.nhc.gov.cn/ewebeditor/uploadfile/.../20170417104506514.pdf",
+    "pagemap": {
+      "metatags": [
+        {
+          "moddate": "D:20170414102423+08'00'",
+          "creator": "Microsoft® Word 2010",
+          "creationdate": "D:20170414102423+08'00'",
+          "author": "XIAOFENG",
+          "producer": "Microsoft® Word 2010",
+          "title": "0-3岁儿童健康管理服务规范"
+        }
+      ]
+    },
+    "mime": "application/pdf",
+    "fileFormat": "PDF/Adobe Acrobat"
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "孕期胎儿发育- 妙佑医疗国际",
+    "htmlTitle": "孕期胎儿发育- 妙佑医疗国际",
+    "link": "https://www.mayoclinic.org/zh-hans/healthy-lifestyle/pregnancy-week-by-week/in-depth/fetal-positions/art-20546850",
+    "displayLink": "www.mayoclinic.org",
+    "snippet": "如果怀孕超过36 周，胎儿呈完全或不完全臀先露，医疗护理专业人员可能会 ... 也可查阅. 孕晚期 · 胎儿发育：孕晚期 · 过期妊娠。 Pregnancy due date calculator · 产 ...",
+    "htmlSnippet": "如果怀孕超过36 周，胎儿呈完全或不完全臀先露，医疗护理专业人员可能会 ... 也可查阅. <b>孕晚期</b> &middot; 胎儿发育：<b>孕晚期</b> &middot; 过期妊娠。 Pregnancy due date calculator &middot; 产&nbsp;...",
+    "formattedUrl": "https://www.mayoclinic.org/zh-hans/healthy-lifestyle/.../art-20546850",
+    "htmlFormattedUrl": "https://www.mayoclinic.org/zh-hans/healthy-lifestyle/.../art-20546850",
+    "pagemap": {
+      "cse_thumbnail": [
+        {
+          "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQA0EZ4dwnjV9lXij5Z-Pe3wnC7-YuvP6jGo0h5lmtYHxwiRt6KqasyPeR-&s",
+          "width": "310",
+          "height": "163"
+        }
+      ],
+      "metatags": [
+        {
+          "pocid": "ART-20546850",
+          "og:image": "https://www.mayoclinic.org/-/media/web/gbs/shared/images/socialmedia-metadata/mc_opengraph_600x315.jpg",
+          "twitter:card": "summary",
+          "og:site_name": "Mayo Clinic",
+          "person group": "Female",
+          "subject": "Third trimester",
+          "msapplication-tileimage": "/-/media/web/gbs/shared/images/mstile-144x144.png",
+          "twitter:creator": "@mayoclinic",
+          "og:description": "Learn more about services at Mayo Clinic.",
+          "twitter:image": "https://www.mayoclinic.org/-/media/web/gbs/shared/images/socialmedia-metadata/mc_twittercard_120x120.jpg",
+          "twitter:image:alt": "GBS 图像替代了文本社交媒体_TwitterCard",
+          "twitter:site": "@mayoclinic",
+          "secondary subject": "Labor and delivery",
+          "publishdate": "2024-01-05",
+          "application-name": " ",
+          "msapplication-tilecolor": "#FFFFFF",
+          "twitter:title": "妙佑医疗国际 - 孕期胎儿发育",
+          "og:type": "article",
+          "og:title": "妙佑医疗国际 - 孕期胎儿发育",
+          "fb:app_id": "547651825432067",
+          "viewport": "initial-scale=1.0",
+          "twitter:description": "Learn more about services at Mayo Clinic.",
+          "content package": "Health information library",
+          "og:url": "https://www.mayoclinic.org/zh-hans/healthy-lifestyle/pregnancy-week-by-week/in-depth/fetal-positions/art-20546850",
+          "format-detection": "telephone=no",
+          "contentlanguage": "zh-Hans"
+        }
+      ],
+      "cse_image": [
+        {
+          "src": "https://www.mayoclinic.org/-/media/web/gbs/shared/images/socialmedia-metadata/mc_opengraph_600x315.jpg"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "懷孕第37週－為順產準備媽咪可以做的幾件事情|健康文章-內容 健康 ...",
+    "htmlTitle": "懷孕第37週－為<b>順產</b>準備媽咪可以做的幾件事情|健康文章-內容  健康 ...",
+    "link": "https://health99.hpa.gov.tw/article/18461",
+    "displayLink": "health99.hpa.gov.tw",
+    "snippet": "Mar 31, 2021 ... 會降臨唷！此時子宮大小約38公分，羊水量約有1000c.c.，隨著胎頭下降到骨盆腔，妳前幾週 ... 孕館-孕期健康1-40週系列專文：https://health99.hpa.gov.tw ...",
+    "htmlSnippet": "Mar 31, 2021 <b>...</b> 會降臨唷！此時子宮大小約<b>38</b>公分，羊水量約有1000c.c.，隨著胎頭下降到骨盆腔，妳前幾週 ... 孕館-孕期健康1-40週系列專文：https://health99.hpa.gov.tw&nbsp;...",
+    "formattedUrl": "https://health99.hpa.gov.tw/article/18461",
+    "htmlFormattedUrl": "https://health99.hpa.gov.tw/article/18461",
+    "pagemap": {
+      "cse_thumbnail": [
+        {
+          "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4d5Rxtz5eZ1wxoz0f5COpIVgSdxqprHWc7AhghrS_CTC_dctl7VVXNqs&s",
+          "width": "307",
+          "height": "164"
+        }
+      ],
+      "metatags": [
+        {
+          "og:image": "https://health99.hpa.gov.tw/img/og.png",
+          "copyright": "本網頁著作權屬國民健康署所有",
+          "og:image:width": "1200",
+          "og:type": "website",
+          "og:site_name": "健康九九+網站",
+          "handheldfriendly": "true",
+          "author": "健康九九+網站",
+          "og:title": "懷孕第37週－為順產準備　媽咪可以做的幾件事情|健康文章-內容│健康九九+網站",
+          "og:image:height": "628",
+          "og:image:type": "image/jpeg",
+          "type": "website",
+          "title": "懷孕第37週－為順產準備　媽咪可以做的幾件事情|健康文章-內容│健康九九+網站",
+          "locale": "zh_tw",
+          "og:description": "懷孕第37週已經算足月，寶寶隨時都會降臨喔～媽咪這時可能把分泌物及羊水搞混，建議要提前了解一下分辨方法唷！\r\n\r\n媽咪身體變化\r\n\r\n孕期正式進入第10個月囉～媽咪懷孕到37週已經可以算是足月了，小寶貝隨時可能會降臨唷！此時子宮大小約38公分，羊水量約有1000c.c.，隨著胎頭下降到骨盆腔，妳前幾週的一些反胃、呼吸困難的症狀會消失，但膀胱受到的壓力更大了，讓妳有頻尿、尿不乾淨等狀況，媽咪記得不要因此而憋尿或不喝水喔！\r\n\r\n&nbsp;\r\n\r\n胎兒發育狀況\r\n\r\n寶寶的身高來到約48.6公分、體重約2859公克囉～從這週開始，他的體重增加會稍微減緩，但仍有成長空間喔！寶寶的脂肪會繼續形成，看起來會更加圓潤，讓他出生後能夠保暖身體。\r\n\r\n&nbsp;\r\n\r\n飲食營養\r\n\r\n如果媽咪這時候發現體重超過10～14公斤的理想範圍，切記不要刻意減肥，可以從飲食中調整喔～\r\n\r\n．",
+          "url": "https://health99.hpa.gov.tw/article/18461",
+          "site_name": "健康九九+網站",
+          "apple-mobile-web-app-status-bar-style": "black-translucent",
+          "viewport": "width=device-width,user-scalable=yes",
+          "apple-mobile-web-app-capable": "yes",
+          "csrf-token": "cdxLZZCnoNGsT2wCMuoVBRy1n6STg4Lm0Z4be2BX",
+          "mobileoptimized": "width",
+          "og:locale": "zh_tw",
+          "og:url": "https://health99.hpa.gov.tw/article/18461",
+          "format-detection": "telephone=no"
+        }
+      ],
+      "cse_image": [
+        {
+          "src": "https://health99.hpa.gov.tw/img/og.png"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "35例不同妊娠时期烧伤患者的回顾性分析- PMC",
+    "htmlTitle": "35例不同妊娠时期烧伤患者的回顾性分析- PMC",
+    "link": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11705239/",
+    "displayLink": "pmc.ncbi.nlm.nih.gov",
+    "snippet": "分娩孕周[周, M（min, max）], 新生儿体重（g, x±s）. 经阴道顺产, 剖宫产. 注：“—”表示无此统计量值. 妊娠早期组, 9, 7, 2, 38（35, 40）, 3 271±355. 妊娠中期组, 8, 2, 6, 37（ ...",
+    "htmlSnippet": "分娩孕周[周, M（min, max）], 新生儿体重（g, x±s）. 经阴道<b>顺产</b>, 剖宫产. 注：“—”表示无此统计量值. 妊娠早期组, 9, 7, 2, <b>38</b>（35, 40）, 3 271±355. 妊娠中期组, 8, 2, 6, 37（&nbsp;...",
+    "formattedUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11705239/",
+    "htmlFormattedUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11705239/",
+    "pagemap": {
+      "metatags": [
+        {
+          "msapplication-config": "/static/img/favicons/browserconfig.xml",
+          "citation_publication_date": "2022 May 20",
+          "og:image": "https://cdn.ncbi.nlm.nih.gov/pmc/cms/images/pmc-card-share.jpg?_=0",
+          "theme-color": "#ffffff",
+          "citation_title": "35例不同妊娠时期烧伤患者的回顾性分析",
+          "citation_author_institution": "武汉大学附属同仁医院暨武汉市第三医院烧伤科, 武汉 430060, Department of Burns, Tongren Hospital of Wuhan University & Wuhan Third Hospital, Wuhan 430060, China",
+          "twitter:card": "summary_large_image",
+          "og:site_name": "PubMed Central (PMC)",
+          "citation_reference": "citation_journal_title=Burns; citation_title=Pregnancy and burns: guidelines for safe management; citation_author=H Karimi; citation_author=S Sedigh-Maroufi; citation_author=H Akbari; citation_volume=46; citation_issue=7; citation_publication_date=2020; citation_firstpage=1620; citation_lastpage=1631; citation_doi=10.1016/j.burns.2020.04.005;",
+          "citation_journal_title": "Zhonghua Shaoshang yu Chuangmian Xiufu Zazhi",
+          "ncbi_pdid": "article",
+          "ncbi_pcid": "journal",
+          "ncbi_phid": "FF208761899A6AC3198761005D1A31E8.m_1",
+          "og:description": "总结不同妊娠时期烧伤患者的临床结局, 探讨妊娠期烧伤的合理处理方案。 采用回顾性观察性研究方法。2010年6月—2020年6月, 武汉市第三医院烧伤科收治21例和南昌大学第一附属医院烧伤科收治14例符合入选标准的妊娠烧伤患者。根据烧伤时的孕期, 将35例患者分为妊娠早期组[18例, 年龄（26±4）岁, 孕期8（4, 11）周]、妊娠中期组[10例, 年龄（26±3）岁, 孕期21（14, 27）周]、妊娠晚期组[7例, 年龄（30±5）岁, 孕期32（29, ...",
+          "ncbi_db": "pmc",
+          "twitter:site": "@ncbi",
+          "ncbi_pinger_stat_url": "https://pmc.ncbi.nlm.nih.gov/stat",
+          "citation_fulltext_html_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11705239/",
+          "citation_pdf_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11705239/pdf/zhssycmxfzz-38-5-415.pdf",
+          "ncbi_type": "fulltext",
+          "citation_pmid": "35599417",
+          "og:type": "article",
+          "handheldfriendly": "True",
+          "ncbi_app": "cloudpmc-viewer",
+          "og:title": "35例不同妊娠时期烧伤患者的回顾性分析",
+          "citation_abstract": "目的 总结不同妊娠时期烧伤患者的临床结局, 探讨妊娠期烧伤的合理处理方案。 方法 采用回顾性观察性研究方法。2010年6月—2020年6月, 武汉市第三医院烧伤科收治21例和南昌大学第一附属医院烧伤科收治14例符合入选标准的妊娠烧伤患者。根据烧伤时的孕期, 将35例患者分为妊娠早期组[18例, 年龄（26±4）岁, 孕期8（4, 11）周]、妊娠中期组[10例, 年龄（26±3）岁, 孕期21（14, 27）周]、妊娠晚期组[7例, 年龄（30±5）岁, 孕期32（29, 35）周]。患者均接受液体复苏、抗感染、创面处理及多学科综合救治等治疗。统计3组患者在治疗过程中出现的烧伤并发症、孕妇结局、胎儿结局、分娩方式、分娩孕周、新生儿体重。对数据行单因素方差分析、Kruskal-Wallis检验、Fisher确切概率法检验。 结果 在治疗过程中, 妊娠早期组、妊娠中期组、妊娠晚期组分别有4、4、2例患者出现创面感染, 有1 ",
+          "citation_author": "周 锦秀",
+          "citation_abstract_html_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11705239/",
+          "citation_issue": "5",
+          "citation_firstpage": "415",
+          "viewport": "width=device-width, initial-scale=1.0",
+          "citation_doi": "10.3760/cma.j.cn501225-20220214-00027",
+          "mobileoptimized": "320",
+          "ncbi_domain": "cjbw",
+          "citation_volume": "38",
+          "og:url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11705239/"
+        }
+      ],
+      "cse_image": [
+        {
+          "src": "https://cdn.ncbi.nlm.nih.gov/pmc/cms/images/pmc-card-share.jpg?_=0"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "胎位不正只有剖宫产一条路么？帮TA 在妈妈肚里翻个身可好- 医院汇 ...",
+    "htmlTitle": "胎位不正只有剖宫产一条路么？帮TA 在妈妈肚里翻个身可好- 医院汇 ...",
+    "link": "https://y.dxy.cn/v2/hospital/12331/818078.html",
+    "displayLink": "y.dxy.cn",
+    "snippet": "Mar 15, 2022 ... 终于熬到了孕晚期，胎儿该入盆了，就像是胎宝宝进入了预设的轨道，一切 ... 臀位出生的宝宝在顺产的时候，遭遇髋关节发育不良、大脑缺氧的风险更高，所以大多数 ...",
+    "htmlSnippet": "Mar 15, 2022 <b>...</b> 终于熬到了<b>孕晚期</b>，胎儿该入盆了，就像是胎宝宝进入了预设的轨道，一切 ... 臀位出生的宝宝在<b>顺产</b>的时候，遭遇髋关节发育不良、大脑缺氧的风险更高，所以大多数&nbsp;...",
+    "formattedUrl": "https://y.dxy.cn/v2/hospital/12331/818078.html",
+    "htmlFormattedUrl": "https://y.dxy.cn/v2/hospital/12331/818078.html",
+    "pagemap": {
+      "cse_thumbnail": [
+        {
+          "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvQPHDH7UGJIeiSAr6i1yoZwErk9Mv_mZLBpZosprmTjPuKvcDjQCjmKb3&s",
+          "width": "184",
+          "height": "274"
+        }
+      ],
+      "metatags": [
+        {
+          "dxy-wechat-share-img-url": "https://img1.dxycdn.com/2022/0315/111/4620684465226067353-126.png",
+          "baidu-site-verification": "code-4hba3pNr42",
+          "viewport": "width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover",
+          "dxy-wechat-share": "yes",
+          "applicable-device": "pc,mobile"
+        }
+      ],
+      "cse_image": [
+        {
+          "src": "https://img1.dxycdn.com/2022/0812/878/0493499172737545653-7.png"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "为了能顺产，我也是蛮拼的-她理财网",
+    "htmlTitle": "为了能<b>顺产</b>，我也是蛮拼的-她理财网",
+    "link": "https://www.talicai.com/post/194141",
+    "displayLink": "www.talicai.com",
+    "snippet": "Nov 11, 2015 ... 同时，为了增加顺产几率，每天晚上老公辅助我做深蹲的动作，一组10 ... 或许是瓜熟蒂落的时间到了，也可能是我坚持运动的原因，38周+2天，顺产，6斤7两。",
+    "htmlSnippet": "Nov 11, 2015 <b>...</b> 同时，为了增加<b>顺产</b>几率，每天晚上老公<b>辅助</b>我做深蹲的动作，一组10 ... 或许是瓜熟蒂落的时间到了，也可能是我坚持运动的原因，<b>38周</b>+2天，<b>顺产</b>，6斤7两。",
+    "formattedUrl": "https://www.talicai.com/post/194141",
+    "htmlFormattedUrl": "https://www.talicai.com/post/194141",
+    "pagemap": {
+      "metatags": [
+        {
+          "renderer": "webkit",
+          "baidu-site-verification": "2Bxa7qK7QJ",
+          "viewport": "width=device-width, maximum-scale=1.0",
+          "applicable-device": "pc,mobile",
+          "_token": "b21f51c9ec24ed82c0bb611bd15b66f51cc26d70"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "产妇分娩_中国优生优育协会",
+    "htmlTitle": "产妇分娩_中国优生优育协会",
+    "link": "https://m.ysyy.org.cn/38/202010/54.html",
+    "displayLink": "m.ysyy.org.cn",
+    "snippet": "（5）宫缩时也可做一些辅助的减痛动作。 ... 其次就是产妇的营养是否合理，体重是否合格，最理想的怀孕体重是：在孕早期怀孕（3个月以内）增加2千克，孕中期怀孕（3～6个月）和孕晚期（ ...",
+    "htmlSnippet": "（5）宫缩时也可做一些<b>辅助</b>的减痛动作。 ... 其次就是产妇的营养是否合理，体重是否合格，最理想的怀孕体重是：在孕早期怀孕（3个月以内）增加2千克，孕中期怀孕（3～6个月）和<b>孕晚期</b>（&nbsp;...",
+    "formattedUrl": "https://m.ysyy.org.cn/38/202010/54.html",
+    "htmlFormattedUrl": "https://m.ysyy.org.cn/<b>38</b>/202010/54.html",
+    "pagemap": {
+      "metatags": [
+        {
+          "viewport": "width=device-width initial-scale=1.0 maximum-scale=1.0 user-scalable=yes",
+          "apple-mobile-web-app-capable": "yes",
+          "apple-touch-fullscreen": "yes",
+          "format-detection": "telephone=no,email=no"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "孕期胎儿偏大怎么办？ - 知乎",
+    "htmlTitle": "孕期胎儿偏大怎么办？ - 知乎",
+    "link": "https://www.zhihu.com/question/357423044",
+    "displayLink": "www.zhihu.com",
+    "snippet": "Nov 23, 2019 ... 顺产从发动到结束总时长24hr，分娩用力阶段（第二产程）时间4hr。 孕前期我减重比较厉害，所以之前一直没有太担心体重问题，突然发现是在32周孕检的时候发现 ...",
+    "htmlSnippet": "Nov 23, 2019 <b>...</b> <b>顺产</b>从发动到结束总时长24hr，分娩用力阶段（第二产程）时间4hr。 孕前期我减重比较厉害，所以之前一直没有太担心体重问题，突然发现是在32周孕检的时候发现&nbsp;...",
+    "formattedUrl": "https://www.zhihu.com/question/357423044",
+    "htmlFormattedUrl": "https://www.zhihu.com/question/357423044",
+    "pagemap": {
+      "question": [
+        {
+          "commentcount": "0",
+          "keywords": "妇产科,胎儿,怀孕,孕期,胎儿发育",
+          "answercount": "11",
+          "datemodified": "2019-11-23T15:21:38.000Z",
+          "name": "孕期胎儿偏大怎么办？",
+          "datecreated": "2019-11-23T15:21:38.000Z",
+          "url": "https://www.zhihu.com/question/357423044"
+        }
+      ],
+      "answer": [
+        {
+          "upvotecount": "153",
+          "commentcount": "45",
+          "datemodified": "2021-04-07T03:25:55.000Z",
+          "datecreated": "2021-04-06T00:28:24.000Z",
+          "text": "作为一位孕期一直被胎儿偏大困扰的妈妈，最后成功“剖转顺”的，怒答之，分享下我的个人经历以及如果发生孕周偏大如何在最后几周“悬崖勒马...",
+          "url": "https://www.zhihu.com/question/357423044/answer/1819529246"
+        },
+        {
+          "upvotecount": "10",
+          "commentcount": "0",
+          "datemodified": "2020-04-14T07:19:56.000Z",
+          "datecreated": "2020-04-14T05:47:34.000Z",
+          "text": "怀孕体检的时候，B超单上有对应的数据，比如双顶径，腹围，股骨长，根据这三个可以预测胎儿体重，可以及时了解胎儿发育，调整饮食，跟锻炼，...",
+          "url": "https://www.zhihu.com/question/357423044/answer/1152384639"
+        },
+        {
+          "upvotecount": "1",
+          "commentcount": "1",
+          "datemodified": "2019-11-27T14:44:41.000Z",
+          "datecreated": "2019-11-27T14:44:41.000Z",
+          "text": "控制饮食，我太能吃了，我家宝宝当时偏大两周，医生说可能要剖妇产，让我控制饮食少吃点，后来我控制的不错，顺产的。",
+          "url": "https://www.zhihu.com/question/357423044/answer/913086795"
+        }
+      ],
+      "person": [
+        {
+          "image": "https://picx.zhimg.com/v2-ec8c2cd14f271d219d09a6b65bf2bf60_l.jpg?source=1def8aca",
+          "name": "韬韬",
+          "url": "https://www.zhihu.com/people/tao-tao-19-24-33"
+        },
+        {
+          "image": "https://picx.zhimg.com/v2-850f69a7b7ec6b17057830091c77116e_l.jpg?source=1def8aca",
+          "name": "后排同学",
+          "url": "https://www.zhihu.com/people/dadarabbit"
+        },
+        {
+          "image": "https://picx.zhimg.com/v2-2d3f0cc1a433d0c4ecc2556758293714_l.jpg?source=1def8aca",
+          "name": "共勉君",
+          "url": "https://www.zhihu.com/people/san-bao-ma-ma-sheng-huo-guan"
+        }
+      ],
+      "metatags": [
+        {
+          "renderer": "webkit",
+          "viewport": "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover",
+          "force-rendering": "webkit",
+          "za-config": "{\"pageId\":\"172\"}"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "customsearch#result",
+    "title": "【解读】妊娠期子宫蜕膜息肉诊治中国专家共识（2024年版）中华 ...",
+    "htmlTitle": "【解读】妊娠期子宫蜕膜息肉诊治中国专家共识（2024年版）中华 ...",
+    "link": "https://cspm.cma.org.cn/index/news?id=3638",
+    "displayLink": "cspm.cma.org.cn",
+    "snippet": "Jan 3, 2025 ... 有息肉组在孕22~28周流产率、34周前早产率、37周前早产率均高于无息肉组。结果提示，妊娠早期子宫颈息肉是晚期流产和自发性早产的独立危险因素（OR=13.0）。",
+    "htmlSnippet": "Jan 3, 2025 <b>...</b> 有息肉组在孕22~28周流产率、34周前早产率、37周前早产率均高于无息肉组。结果提示，妊娠早期子宫颈息肉是<b>晚期</b>流产和自发性早产的独立危险因素（OR=13.0）。",
+    "formattedUrl": "https://cspm.cma.org.cn/index/news?id=3638",
+    "htmlFormattedUrl": "https://cspm.cma.org.cn/index/news?id=3638",
+    "pagemap": {
+      "cse_thumbnail": [
+        {
+          "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRIVnspoVO6XZBwPLxnPc8jI6hACU3UKY9Dw2sotcw2wwCPV-PfxNd_dEk&s",
+          "width": "331",
+          "height": "152"
+        }
+      ],
+      "metatags": [
+        {
+          "apple-mobile-web-app-status-bar-style": "black",
+          "viewport": "width=device-width, initial-scale=1.0",
+          "apple-mobile-web-app-capable": "yes",
+          "applicable-device": "mobile",
+          "format-detection": "telephone=no"
+        }
+      ],
+      "cse_image": [
+        {
+          "src": "https://cspm.cma.org.cn/upload_cms/images/2025/01/6387149449313514061923118"
+        }
+      ]
+    }
+  }
+]
