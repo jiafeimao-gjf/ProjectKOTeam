@@ -33,8 +33,11 @@ current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
-
 def ollama_stream(prompt, target_model, subfix):
+    ollama_stream_inner(prompt, target_model, subfix, need_save=True)
+
+
+def ollama_stream_inner(prompt, target_model, subfix, need_save=False):
     """
     :param prompt: 输入的描述
     :param target_model: 输入模型
@@ -51,9 +54,11 @@ def ollama_stream(prompt, target_model, subfix):
             # logger.info(text)
             save_data["answer"] += text
             # SSE 数据格式必须是 "data: ...\n\n"
+            # yield f'{text}'
             yield f"data: {json.dumps({'text': text})}\n\n"
     # 告诉前端结束
     yield "data: [DONE]\n\n"
+    # yield "[DONE]"
 
     # MongoDB 存储逻辑
     # chat_record = {
@@ -66,15 +71,16 @@ def ollama_stream(prompt, target_model, subfix):
     # chat_collection.insert_one(chat_record)
     # logger.info("数据已保存到MongoDB")
     # 保存到history 下面
-    random_id = str(uuid.uuid4())
-    if not os.path.exists(f"history/history_{subfix}"):
-        os.mkdir(f"history/history_{subfix}")
-    with open(f"history/history_{subfix}/history_{random_id}.md", "a") as f:
-        logger.info("保存数据")
-        f.write(f"# model: {save_data['model']}\n")
-        f.write(f"# prompt: {save_data['prompt']}\n")
-        f.write(f"# answer: \n {save_data['answer']}\n")
-        logger.info("保存成功")
+    if need_save:
+        random_id = str(uuid.uuid4())
+        if not os.path.exists(f"history/history_{subfix}"):
+            os.mkdir(f"history/history_{subfix}")
+        with open(f"history/history_{subfix}/history_{random_id}.md", "a") as f:
+            logger.info("保存数据")
+            f.write(f"# model: {save_data['model']}\n")
+            f.write(f"# prompt: {save_data['prompt']}\n")
+            f.write(f"# answer: \n {save_data['answer']}\n")
+            logger.info("保存成功")
 
 
 # POST 请求
@@ -153,11 +159,12 @@ def prompt_config():
     #     # 解码\u4f60\u662f
     #     # 解码Unicode转义字符
     #     return {"prompts": result["prompts"]}
-    return {"prompts": ["你是一个具备十年项目管理经验的项目经理，可以针对项目需求，进行规划项目迭代交付计划，你可以将项目下发到产品经理、架构师，开发测试人员，保障项目正常迭代。",
-            "你是一个具备十年产品经验的产品经理，可以针对项目需求，进行产品功能设计，你可以将产品功能设计下发到开发人员，保障产品功能正常实现。",
-            "你是一个具备十年开发经验和架构经验的架构师，可以针对项目需求，设计详尽的技术方案，输出技术方案文档。",
-            "你是一个具备十年开发经验的全栈开发者，可以针对项目需求和技术方案，进行项目开发，输出实现代码，保证完成需求里面的每一个功能。",
-            "你是一个具备十年测试经验的测试工程师，可以针对项目需求，进行项目测试，你可以将项目测试下发到测试人员，保障项目测试正常进行。"]}
+    return {"prompts": [
+        "你是一个具备十年项目管理经验的项目经理，可以针对项目需求，进行规划项目迭代交付计划，你可以将项目下发到产品经理、架构师，开发测试人员，保障项目正常迭代。",
+        "你是一个具备十年产品经验的产品经理，可以针对项目需求，进行产品功能设计，你可以将产品功能设计下发到开发人员，保障产品功能正常实现。",
+        "你是一个具备十年开发经验和架构经验的架构师，可以针对项目需求，设计详尽的技术方案，输出技术方案文档。",
+        "你是一个具备十年开发经验的全栈开发者，可以针对项目需求和技术方案，进行项目开发，输出实现代码，保证完成需求里面的每一个功能。",
+        "你是一个具备十年测试经验的测试工程师，可以针对项目需求，进行项目测试，你可以将项目测试下发到测试人员，保障项目测试正常进行。"]}
 
 
 @app.post("/prompt_config")
