@@ -5,8 +5,6 @@ import time
 import urllib
 import uuid
 
-import ollama
-
 from flask import Flask, Response, request
 import ollama
 import json
@@ -34,7 +32,7 @@ postfix = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
 def ollama_stream(prompt, target_model, subfix):
-    ollama_stream_inner(prompt, target_model, subfix, need_save=True)
+    return ollama_stream_inner(prompt, target_model, subfix, need_save=True)
 
 
 def ollama_stream_inner(prompt, target_model, subfix, need_save=False):
@@ -47,11 +45,25 @@ def ollama_stream_inner(prompt, target_model, subfix, need_save=False):
     logger.info(f"ollama_stream: {prompt}, model: {target_model}")
     # 调用 ollama 流式生成
     save_data = {"model": target_model, "prompt": prompt, "answer": ""}
+
+    hasThink = False
     for chunk in ollama.generate(model="gemma3n:e4b" if target_model == "gemma3n:e4b" else target_model, prompt=prompt,
                                  stream=True):
         text = chunk.get("response", "")
+
+        if len(text) == 0:
+            text = chunk.get("thinking", "")
+            if not hasThink:
+                save_data["answer"] += "thinking:\n\n"
+                hasThink = True
+        else:
+            if hasThink:
+                save_data["answer"] += "\n\nthinking end \n"
+                hasThink = False
+                text = "\n" + text
+
         if text:
-            # logger.info(text)
+            logger.info(text)
             save_data["answer"] += text
             # SSE 数据格式必须是 "data: ...\n\n"
             # yield f'{text}'
