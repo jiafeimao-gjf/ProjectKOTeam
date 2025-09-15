@@ -158,7 +158,7 @@ def models():
     models = ollama.list()
     response = {"models": []}
     for model in models.models:
-        logger.info(model.model)
+        # logger.info(model.model)
         response["models"].append(model.model)
     return response
 

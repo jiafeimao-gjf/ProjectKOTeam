@@ -5,8 +5,7 @@
       <!-- 加载中提示 -->
       <span v-if="loading">正在生成对话...</span>
       <!-- 渲染消息列表（Markdown） -->
-      <div v-for="(msg, idx) in messages" :key="idx"
-           :class="['message-item', getAgentName(msg.speaker)]">
+      <div v-for="(msg, idx) in messages" :key="idx" :class="['message-item', getAgentName(msg.speaker)]">
         <div class="meta">
           <strong>{{ msg.speaker }}</strong>
           <button class="copy-btn" @click="copyMessage(idx)" title="复制消息">复制答案</button>
@@ -18,9 +17,16 @@
     <div class="bottom-bar">
       <div class="bar-row">
         <div class="input-area">
+          <p>请输入对话主题:</p>
+          <!-- 问题输入框 -->
+          <input v-model="topicContent" placeholder="请输入对话主题..." />
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="input-area">
           <p>模型1角色预设:</p>
           <!-- 问题输入框 -->
-          <input v-model="question" placeholder="输入预设内容..."/>
+          <input v-model="question" placeholder="输入预设内容..." />
           <!-- 模型选择下拉框，始终可见所有模型 -->
           <select v-model="selectedModel" class="model-select">
             <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
@@ -31,7 +37,7 @@
         <div class="input-area">
           <p>模型2角色预设:</p>
           <!-- 问题输入框 -->
-          <input v-model="question2" placeholder="输入预设内容..."/>
+          <input v-model="question2" placeholder="输入预设内容..." />
           <!-- 模型选择下拉框，始终可见所有模型 -->
           <select v-model="selectedModel2" class="model-select">
             <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
@@ -41,11 +47,11 @@
       <div class="bar-row">
         <div class="input-area">
           <label style="display:flex;align-items:center;gap:8px;">
-            <input type="checkbox" v-model="model3Enabled"/> 启用模型3
+            <input type="checkbox" v-model="model3Enabled" /> 启用模型3
           </label>
           <p style="margin-left:6px">模型3角色预设:</p>
           <!-- 问题输入框 -->
-          <input v-model="question3" :disabled="!model3Enabled" placeholder="输入预设内容..."/>
+          <input v-model="question3" :disabled="!model3Enabled" placeholder="输入预设内容..." />
           <!-- 模型选择下拉框，始终可见所有模型 -->
           <select v-model="selectedModel3" class="model-select" :disabled="!model3Enabled">
             <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
@@ -55,7 +61,7 @@
       <div class="bar-row control-row">
         <div class="control-group">
           <label style="margin-right:8px">轮数：</label>
-          <input type="number" min="1" max="50" v-model.number="turns" class="turns-input"/>
+          <input type="number" min="1" max="50" v-model.number="turns" class="turns-input" />
         </div>
         <div class="control-group">
           <button @click="startConversation" :disabled="loading">开始双Agent对话</button>
@@ -68,14 +74,16 @@
 
 <script setup>
 // Vue 响应式 API
-import {ref, computed, watch, nextTick, onMounted} from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 // markdown 解析库
-import {marked} from 'marked'
+import { marked } from 'marked'
 // 代码高亮库
 import hljs from 'highlight.js'
 // 代码高亮样式
 import 'highlight.js/styles/github.css'
 
+// 用户输入的主题
+const topicContent = ref('')
 // 用户输入的问题
 const question = ref('')
 const question2 = ref('')
@@ -164,8 +172,8 @@ async function fetchAnswerOnce(prompt, model, idx) {
     try {
       const res = await fetch('/api/chat_start', {
         method: 'post',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({prompt, model})
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, model })
       })
       if (!res.ok) {
         const txt = await res.text()
@@ -237,10 +245,10 @@ async function startConversation() {
 
   // 初始消息
   let lastText = ''
-  messages.value.push({speaker: 'Agent1', text: question.value + '，我的模型是：' + selectedModel.value})
-  messages.value.push({speaker: 'Agent2', text: question2.value + '，我的模型是：' + selectedModel2.value})
+  messages.value.push({ speaker: 'Agent1', text: question.value + '，我的模型是：' + selectedModel.value })
+  messages.value.push({ speaker: 'Agent2', text: question2.value + '，我的模型是：' + selectedModel2.value })
   if (model3Enabled.value) {
-    messages.value.push({speaker: 'Agent3', text: question3.value + '，我的模型是：' + selectedModel3.value})
+    messages.value.push({ speaker: 'Agent3', text: question3.value + '，我的模型是：' + selectedModel3.value })
     lastText = question3.value
   } else {
     lastText = question2.value
@@ -252,8 +260,8 @@ async function startConversation() {
   for (let i = 0; i < turns.value; i++) {
     if (stopRequested.value) break
     // Agent1 回答（流式）
-    const prompt1 = question.value + `，基于\n${lastText}\n，结合情景，完成自己输出自己要做的内容`
-    const idx1 = messages.value.push({speaker: 'Agent1', text: ''}) - 1
+    const prompt1 = `背景：\n${lastText}\n ` + `主题：${topicContent.value} \n 角色和职责：${question.value}\n`
+    const idx1 = messages.value.push({ speaker: 'Agent1', text: '' }) - 1
     const resp1 = await fetchAnswerOnce(prompt1, selectedModel.value, idx1)
     lastText = resp1
     if (stopRequested.value) break
@@ -267,7 +275,7 @@ async function startConversation() {
     }
     eventSources.length = 0
     loading.value = false
-    const prompt2 = question2.value + `，基于\n${lastText}\n，结合情景，完成自己输出自己要做的内容`
+    const prompt2 = `背景：\n${lastText}\n ` + `主题：${topicContent.value} \n 角色和职责：${question2.value}\n`
 
     function stopConversation() {
       stopRequested.value = true
@@ -280,7 +288,7 @@ async function startConversation() {
       loading.value = false
     }
 
-    const idx2 = messages.value.push({speaker: 'Agent2', text: ''}) - 1
+    const idx2 = messages.value.push({ speaker: 'Agent2', text: '' }) - 1
     const resp2 = await fetchAnswerOnce(prompt2, selectedModel2.value, idx2)
     lastText = resp2
     // Agent3 回答（可选，流式）
@@ -288,7 +296,7 @@ async function startConversation() {
       // 取最近两条消息（通常是 Agent1 和 Agent2 的回复），先让 Agent3 做简短总结再回答
       const recent = messages.value.slice(-2).map(m => `${m.speaker}: ${m.text}`).join('\n')
       const prompt3 = `${question3.value}\n\n请先用不少于500字浓缩总结下面两条内容的要点（要点式列出）， 包裹总结内容：\n${recent}\n\n 结合情景，完成自己输出自己要做的内容。`;
-      const idx3 = messages.value.push({speaker: 'Agent3', text: ''}) - 1
+      const idx3 = messages.value.push({ speaker: 'Agent3', text: '' }) - 1
       const resp3 = await fetchAnswerOnce(prompt3, selectedModel3.value, idx3)
       lastText = resp3
     }
@@ -302,7 +310,7 @@ marked.setOptions({
   highlight: function (code, lang) {
     if (lang && hljs.getLanguage(lang)) {
       // 指定语言高亮
-      return hljs.highlight(code, {language: lang}).value
+      return hljs.highlight(code, { language: lang }).value
     }
     // 自动检测语言高亮
     return hljs.highlightAuto(code).value
@@ -318,65 +326,6 @@ watch(renderedAnswer, async () => {
   document.querySelectorAll('#md pre code').forEach(block => hljs.highlightElement(block))
 })
 
-// 提交问题，流式获取答案
-function askQuestion(questionText, model, agentIndex = 1) {
-  answer.value = ''
-  loading.value = true
-  if (!questionText.trim()) {
-    alert('不允许空问题，请输入详细的问题哦！')
-    loading.value = false
-    return
-  }
-  // 关闭旧的 SSE 连接
-  if (eventSource) {
-    eventSource.close()
-  }
-  // 使用 fetch 先 POST，获取流式 EventSource 通道
-  fetch('/api/chat_start', {
-    method: 'post',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      prompt: questionText,
-      model: model
-    })
-  }).then(res => {
-    if (!res.ok) throw new Error('接口请求失败')
-    // 假设后端返回一个流式通道地址
-    return res.text()
-  }).then((streamUrl) => {
-    eventSource = new EventSource(streamUrl)
-    eventSource.onmessage = (event) => {
-      // 检查流式消息是否为结束标志
-      if (event.data === '[DONE]') {
-        loading.value = false
-        eventSource.close()
-        return
-      }
-      try {
-        const data = JSON.parse(event.data)
-        if (data.text) {
-          answer.value += data.text
-        }
-      } catch (e) {
-        answer.value += event.data
-      }
-    }
-    eventSource.onerror = () => {
-      loading.value = false
-      eventSource.close()
-    }
-    eventSource.onopen = () => {
-      // loading already set to true at function start
-    }
-    eventSource.addEventListener('end', () => {
-      loading.value = false
-      eventSource.close()
-    })
-  }).catch(() => {
-    loading.value = false
-    answer.value = '接口调用失败，请稍后重试。'
-  })
-}
 
 // 页面初始化时获取模型列表
 onMounted(async () => {
@@ -571,6 +520,7 @@ h2 {
   background: #859ae5;
   cursor: pointer;
 }
+
 .copied-msg {
   margin-left: 8px;
   color: #2a8f3e;
@@ -588,41 +538,53 @@ h2 {
 
 /* 消息项 - 客服1（左对齐） */
 .message-item.agent1 {
-  align-items: flex-start; /* 子元素顶部对齐，整体左对齐布局 */
+  align-items: flex-start;
+  /* 子元素顶部对齐，整体左对齐布局 */
 }
 
 /* 客服1消息气泡样式 */
 .message-item.agent1 .bubble {
-  background: #caebfb; /* 浅蓝色背景 */
-  color: #062a4f; /* 深蓝色文字 */
-  border-top-left-radius: 4px; /* 仅左上角圆角 */
+  background: #caebfb;
+  /* 浅蓝色背景 */
+  color: #062a4f;
+  /* 深蓝色文字 */
+  border-top-left-radius: 4px;
+  /* 仅左上角圆角 */
   max-width: 60vw;
   text-align: left;
 }
 
 /* 消息项 - 客服2（右对齐） */
 .message-item.agent2 {
-  align-items: flex-end; /* 子元素顶部对齐，整体右对齐布局 */
+  align-items: flex-end;
+  /* 子元素顶部对齐，整体右对齐布局 */
 }
 
 /* 客服2消息气泡样式 */
 .message-item.agent2 .bubble {
-  background: #e0e68b; /* 浅橙色背景 */
-  color: #4a2b00; /* 深橙色文字 */
-  border-top-right-radius: 4px; /* 仅右上角圆角 */
+  background: #e0e68b;
+  /* 浅橙色背景 */
+  color: #4a2b00;
+  /* 深橙色文字 */
+  border-top-right-radius: 4px;
+  /* 仅右上角圆角 */
   max-width: 60vw;
   text-align: left;
 }
 
 /* 消息项 - 客服3（居中对齐） */
 .message-item.agent3 {
-  align-items: flex-end; /* 子元素垂直居中 */
+  align-items: flex-end;
+  /* 子元素垂直居中 */
 }
 
 .message-item.agent3 .bubble {
-  background: #ade8b9; /* 浅橙色背景 */
-  color: #4a2b00; /* 深橙色文字 */
-  border-top-right-radius: 4px; /* 仅右上角圆角 */
+  background: #ade8b9;
+  /* 浅橙色背景 */
+  color: #4a2b00;
+  /* 深橙色文字 */
+  border-top-right-radius: 4px;
+  /* 仅右上角圆角 */
   max-width: 60vw;
   text-align: left;
 }
