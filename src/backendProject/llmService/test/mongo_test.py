@@ -1,14 +1,28 @@
 from pymongo import MongoClient
 
 client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
-db = client['llm_chat_history']  # 数据库名称
-chat_collection = db['chat_records']  # 集合名称
+
+
+def get_collection(db_name="llm_chat_history", collection_name="chat_records"):
+    if db_name not in client.list_database_names():
+        client.create_database(db_name)
+    db = client[db_name]  # 数据库名称
+    if collection_name not in db.list_collection_names():
+        db.create_collection(collection_name)
+    return db[collection_name]  # 集合名称
+
+
 if __name__ == '__main__':
+    chat_collection = get_collection(db_name="llm_chat_history1", collection_name="chat_records")
+
     # db.create_collection("chat_records")
     # 查找所有文档
     documents = chat_collection.find()
     for document in documents:
-        print(document.get("prompts"))
+        for key, value in document.items():
+            print(key, value)
+        # print(document.values())
+        # print(document.get("prompts"))
     # # 写入
     # chat_collection.insert_one({
     #     "prompt": "你好",
