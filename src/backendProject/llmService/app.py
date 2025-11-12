@@ -114,7 +114,6 @@ def chat_start():
     body_dict[uuid_key] = {"prompt": prompt, "model": model}
     return f"/api/chat?uuid={uuid_key}"
 
-
 @app.get("/chat")
 def chat():
     global body_dict
@@ -179,6 +178,7 @@ def prompt_config():
         "你是一个具备十年测试经验的测试工程师，可以针对项目需求，进行项目测试，你可以将项目测试下发到测试人员，保障项目测试正常进行。"]}
 
 
+
 @app.post("/prompt_config")
 def post_prompt_config():
     # prompts = request.json.get("prompts")
@@ -195,6 +195,32 @@ def post_prompt_config():
     #     logger.info(result["prompts"])
 
     return {"msg": "success", "code": 0}
+
+
+@app.post("/browser_chat")
+def browser_chat():
+    # 获取body里面的question
+    question = request.json.get("question")
+    if not question:
+        return {"error": "question is required"}, 400
+
+    logger.info(f"Received question: {question}")
+
+    # 使用默认模型进行流式响应
+    # 这里可以根据需要指定特定的模型
+    def generate():
+        for chunk in ollama_stream_inner(question, "gemma3n:e4b", postfix, need_save=True):
+            yield chunk
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",  # SSE 必须用这个 MIME
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # 关闭 Nginx 等的缓冲
+        }
+    )
 
 
 if __name__ == "__main__":
