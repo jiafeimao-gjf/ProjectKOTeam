@@ -1,4 +1,5 @@
 # app.py
+import base64
 import logging
 import os
 import time
@@ -8,7 +9,8 @@ import uuid
 from flask import Flask, Response, request
 import ollama
 import json
-from pymongo import MongoClient
+
+from flask_cors import CORS
 
 
 # from .log.log_utils import logger
@@ -20,6 +22,8 @@ def get_logger(name):
 logger = get_logger(__name__)
 
 app = Flask(__name__)
+
+# CORS(app)
 
 # 添加MongoDB连接
 # client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
@@ -114,6 +118,7 @@ def chat_start():
     body_dict[uuid_key] = {"prompt": prompt, "model": model}
     return f"/api/chat?uuid={uuid_key}"
 
+
 @app.get("/chat")
 def chat():
     global body_dict
@@ -178,7 +183,6 @@ def prompt_config():
         "你是一个具备十年测试经验的测试工程师，可以针对项目需求，进行项目测试，你可以将项目测试下发到测试人员，保障项目测试正常进行。"]}
 
 
-
 @app.post("/prompt_config")
 def post_prompt_config():
     # prompts = request.json.get("prompts")
@@ -209,7 +213,7 @@ def browser_chat():
     # 使用默认模型进行流式响应
     # 这里可以根据需要指定特定的模型
     def generate():
-        for chunk in ollama_stream_inner(question, "gemma3n:e4b", postfix, need_save=True):
+        for chunk in ollama_stream_inner(question, "gpt-oss:20b", postfix, need_save=True):
             yield chunk
 
     return Response(
@@ -222,6 +226,61 @@ def browser_chat():
         }
     )
 
+
+@app.route('/image_chat', methods=["POST"])
+def image_chat():
+    image_file = request.files.get("image")
+    model = request.form.get("model", "qwen3-vl:8b")
+    prompt = request.form.get("prompt", "请分析图片")
+
+    logger.info(f"Received model: {model}, prompt: {prompt}")
+    if image_file is None:
+        return {"error": "No image uploaded"}, 400
+
+    # 读取文件并转base64
+    image_bytes = image_file.read()
+    image_b64 = base64.b64encode(image_bytes).decode()
+
+    logger.info(f"Received image_b64: {image_b64[:10]}...")
+
+    # 生成器：逐块返回模型输出
+    def generate():
+        try:
+            stream = ollama.chat(
+                model=model,
+                stream=True,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                        "images": [image_b64]
+                    }
+                ]
+            )
+            answer = ""
+            for part in stream:
+                if "thinking" in part["message"] and part["message"]["thinking"]:
+                    thinking = part["message"]["thinking"]
+                    token = thinking
+                else:
+                    token = part["message"]["content"]
+                logger.info(token)
+                answer += token
+                yield token  # 每次一个 token
+            with open(f"{model}_{prompt}_{time.time()}.md", "w", encoding="utf-8") as f:
+                f.write(answer)
+        except Exception as e:
+            yield f"[ERROR] {str(e)}"
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",  # SSE 必须用这个 MIME
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # 关闭 Nginx 等的缓冲
+        }
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5888, debug=True, threaded=True)
