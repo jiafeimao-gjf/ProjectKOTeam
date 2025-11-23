@@ -230,8 +230,8 @@ def browser_chat():
 @app.route('/image_chat', methods=["POST"])
 def image_chat():
     image_file = request.files.get("image")
-    model = request.form.get("model", "qwen3-vl:8b")
-    prompt = request.form.get("prompt", "请分析图片")
+    model = request.form.get("model", "qwen3-vl:4b")
+    prompt = request.form.get("prompt", "请分析图片, 最后一行用10个字以内的总结这个图片")
 
     logger.info(f"Received model: {model}, prompt: {prompt}")
     if image_file is None:
@@ -267,7 +267,12 @@ def image_chat():
                 logger.info(token)
                 answer += token
                 yield token  # 每次一个 token
-            with open(f"{model}_{prompt}_{time.time()}.md", "w", encoding="utf-8") as f:
+                # 以\n为分割，获取最后一个文字
+            file_name = answer.split("\n")[-1]
+            if not file_name:
+                file_name = answer.split("\n")[-2]
+
+            with open(f"{model}_{file_name}_{time.time()}.md", "w", encoding="utf-8") as f:
                 f.write(answer)
         except Exception as e:
             yield f"[ERROR] {str(e)}"
@@ -281,6 +286,7 @@ def image_chat():
             "X-Accel-Buffering": "no"  # 关闭 Nginx 等的缓冲
         }
     )
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5888, debug=True, threaded=True)
