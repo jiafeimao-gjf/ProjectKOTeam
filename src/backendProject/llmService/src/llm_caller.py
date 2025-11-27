@@ -5,7 +5,6 @@ import uuid
 import ollama
 
 
-
 # 添加MongoDB连接
 # client = MongoClient('mongodb://localhost:27017/')  # 假设MongoDB本地运行
 # db = client['llm_chat_history']  # 数据库名称
@@ -79,8 +78,12 @@ def save_to_his(need_save, save_data, subfix, logger):
 
             # If image_path exists, embed the image in the markdown
             if 'image_path' in save_data and save_data['image_path']:
-                image_filename = save_data['image_path'].split('/')[-1]  # Extract filename from path
-                f.write(f"![Uploaded Image](http://localhost:5173/api/image/{save_data['image_path']})\n\n")
+                # 使用html
+                f.write(f"""
+<div style="text-align: center;">
+  <img src="http://localhost:5173/api/{save_data['image_path']}" style="max-width: 33%; height: auto;" />
+</div>
+                """)
 
             f.write(f"# answer: \n {save_data['answer']}\n")
             if logger:

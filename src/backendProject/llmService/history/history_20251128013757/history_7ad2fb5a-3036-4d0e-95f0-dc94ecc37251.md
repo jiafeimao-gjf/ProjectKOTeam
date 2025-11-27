@@ -1,6 +1,8 @@
 # model: qwen3-vl:2b
 # prompt: 分析一下
-![Uploaded Image](http://localhost:5173/api/images/5ee7c412-62b7-4dca-bffc-1660f2ce2844_1764265871.jpeg)
+<div style="text-align: center;">
+  <img src="http://localhost:5173/api/images/5ee7c412-62b7-4dca-bffc-1660f2ce2844_1764265871.jpeg" style="max-width: 30%; height: auto;" />
+</div>
 
 # answer: 
  用户现在需要分析这张图片。首先看画面元素：中心是一只浅色长毛猫，蓝绿色眼睛，毛发蓬松，看起来很可爱。猫的位置在帐篷里，帐篷有灰色的布料，还有其他人。左下角有黑发女性，穿着白色衣服，头发长，被风吹起。背景里还有穿黄黑格子衣服的人，可能在帐篷外，还有其他模糊的人。
