@@ -1,36 +1,82 @@
 <template>
   <div class="qna-page">
-    <h2>本地agent助手</h2>
-    <div class="answer" id="md">
+    <h2>🤖 本地AI助手</h2>
+    
+    <div class="answer" id="md" ref="answerContainer">
+      <div v-if="QAHistory.length === 0 && !loading" class="empty-state">
+        <div class="empty-icon">💬</div>
+        <h3>开始你的对话</h3>
+        <p>向AI助手提问，获得智能回答和建议</p>
+      </div>
+      
       <div v-for="(qa, index) in QAHistory" :key="index" class="qa-item">
-        <p style="text-align: left">你：</p>
-        <div class="qa-question">
-          <div class="meta"><strong>{{ qa.question }}</strong></div>
+        <div class="question-section">
+          <div class="user-avatar">👤</div>
+          <div class="qa-question">
+            <div class="meta">{{ qa.question }}</div>
+          </div>
         </div>
-        <p style="text-align: right">agent回答：</p>
-        <div class="bubble">
-          <div class="meta"><strong>模型: {{ qa.model }} </strong></div>
-          <!-- 加载中提示 -->
-          <span v-if="loading">正在生成答案...</span>
-          <div v-html="getRenderedAnswer(index)"></div>
+        
+        <div class="answer-section">
+          <div class="ai-avatar">🤖</div>
+          <div class="bubble">
+            <div class="meta">模型: {{ qa.model }}</div>
+            <div v-if="loading && index === QAHistory.length - 1" class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div v-else v-html="getRenderedAnswer(index)" class="answer-content"></div>
+          </div>
         </div>
       </div>
-
     </div>
-    <div class="input-area">
-      <textarea v-model="systemPrompt" placeholder="前置约束提示词" class="question-input"
-        ref="questionTextarea"></textarea>
-    </div>
-
-    <div class="input-area">
-      <!-- 问题输入框 -->
-      <textarea v-model="question" placeholder="请输入你的问题..." class="question-input" ref="questionTextarea"></textarea>
-      <!-- 模型选择下拉框，始终可见所有模型 -->
-      <select v-model="selectedModel" class="model-select">
-        <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
-      </select>
-      <!-- 提交按钮，加载时禁用 -->
-      <button @click="askQuestion" :disabled="loading">提交</button>
+    
+    <div class="input-container">
+      <div class="system-prompt-area">
+        <div class="input-header">
+          <span class="input-label">🎯 系统提示词 (可选)</span>
+          <button 
+            @click="toggleSystemPrompt" 
+            class="toggle-btn"
+            :class="{ active: showSystemPrompt }"
+          >
+            {{ showSystemPrompt ? '收起' : '展开' }}
+          </button>
+        </div>
+        <textarea 
+          v-show="showSystemPrompt"
+          v-model="systemPrompt" 
+          placeholder="为AI提供背景信息和约束条件..." 
+          class="question-input system-prompt"
+        ></textarea>
+      </div>
+      
+      <div class="input-area">
+        <textarea 
+          v-model="question" 
+          placeholder="请输入你的问题..." 
+          class="question-input"
+          @keydown.enter.exact.prevent="askQuestion"
+          @keydown.enter.shift.exact="handleShiftEnter"
+          ref="questionTextarea"
+        ></textarea>
+        
+        <div class="controls">
+          <select v-model="selectedModel" class="model-select">
+            <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+          </select>
+          
+          <button 
+            @click="askQuestion" 
+            :disabled="loading || !question.trim()" 
+            class="submit-btn"
+          >
+            <span v-if="loading" class="loading-spinner"></span>
+            {{ loading ? '思考中...' : '发送' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -45,17 +91,16 @@ import hljs from 'highlight.js'
 // 代码高亮样式
 import 'highlight.js/styles/github.css'
 
-// 用户输入的问题
+// 响应式状态
 const question = ref('')
 const systemPrompt = ref('')
-// 是否正在加载
 const loading = ref(false)
-// 选中的模型，支持手动输入
 const selectedModel = ref('')
-const modelList = ref([]) // 模型列表
-
+const modelList = ref([])
 const QAHistory = ref([])
-const questionTextarea = ref(null) // 文本域引用
+const questionTextarea = ref(null)
+const answerContainer = ref(null)
+const showSystemPrompt = ref(false)
 
 // SSE 事件源对象
 let eventSource = null
@@ -64,12 +109,12 @@ let eventSource = null
 marked.setOptions({
   highlight: function (code, lang) {
     if (lang && hljs.getLanguage(lang)) {
-      // 指定语言高亮
       return hljs.highlight(code, { language: lang }).value
     }
-    // 自动检测语言高亮
     return hljs.highlightAuto(code).value
-  }
+  },
+  breaks: true,
+  gfm: true
 })
 
 // 自动调整文本域高度
@@ -88,6 +133,20 @@ watch(question, () => {
   })
 })
 
+// 切换系统提示词显示
+function toggleSystemPrompt() {
+  showSystemPrompt.value = !showSystemPrompt.value
+}
+
+// 处理Shift+Enter换行
+function handleShiftEnter(event) {
+  // 允许默认换行行为
+  nextTick(() => {
+    adjustTextareaHeight()
+  })
+}
+
+// 获取最后答案
 function getLastAnswer() {
   if (QAHistory.value && QAHistory.value.length === 0) {
     return ''
@@ -96,27 +155,45 @@ function getLastAnswer() {
   return qaTemp.answer
 }
 
+// 获取渲染答案
 function getRenderedAnswer(index) {
   const qaTemp = QAHistory.value[index]
   return marked.parse(qaTemp.answer)
 }
 
-// 每次 markdown 内容变化后，自动高亮代码块
+// 自动滚动到底部
+function scrollToBottom() {
+  nextTick(() => {
+    if (answerContainer.value) {
+      answerContainer.value.scrollTop = answerContainer.value.scrollHeight
+    }
+  })
+}
+
+// 监听QA历史变化，自动滚动和高亮代码
 watch(QAHistory, async () => {
   await nextTick()
-  document.querySelectorAll('#md pre code').forEach(block => hljs.highlightElement(block))
+  scrollToBottom()
+  document.querySelectorAll('#md pre code').forEach(block => {
+    hljs.highlightElement(block)
+  })
 })
 
 // 提交问题，流式获取答案
-function askQuestion() {
-  loading.value = true
-
+async function askQuestion() {
   if (!question.value.trim()) {
-    alert('不允许空问题，请输入详细的问题哦！')
-    loading.value = false
+    // 使用现代化的提示方式替代alert
+    const errorDiv = document.createElement('div')
+    errorDiv.className = 'error-toast'
+    errorDiv.textContent = '请输入有效的问题'
+    document.body.appendChild(errorDiv)
+    setTimeout(() => errorDiv.remove(), 3000)
     return
   }
-  let qa = {
+
+  loading.value = true
+
+  const qa = {
     question: systemPrompt.value + "\n" + question.value,
     model: selectedModel.value,
     answer: ''
@@ -132,27 +209,31 @@ function askQuestion() {
   if (eventSource) {
     eventSource.close()
   }
-  // 使用 fetch 先 POST，获取流式 EventSource 通道
-  fetch('/api/chat_start', {
-    method: 'post',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt: qa.question,
-      model: selectedModel.value
+
+  try {
+    // 使用 fetch 先 POST，获取流式 EventSource 通道
+    const response = await fetch('/api/chat_start', {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: qa.question,
+        model: selectedModel.value
+      })
     })
-  }).then(res => {
-    if (!res.ok) throw new Error('接口请求失败')
-    // 假设后端返回一个流式通道地址
-    return res.text()
-  }).then((streamUrl) => {
+
+    if (!response.ok) throw new Error('接口请求失败')
+
+    const streamUrl = await response.text()
+    
     eventSource = new EventSource(streamUrl)
+    
     eventSource.onmessage = (event) => {
-      // 检查流式消息是否为结束标志
       if (event.data === '[DONE]') {
         loading.value = false
         eventSource.close()
         return
       }
+      
       try {
         const data = JSON.parse(event.data)
         if (data.text) {
@@ -162,14 +243,23 @@ function askQuestion() {
         QAHistory.value[QAHistory.value.length - 1].answer += event.data
       }
     }
+    
     eventSource.onerror = () => {
       loading.value = false
       eventSource.close()
+      QAHistory.value[QAHistory.value.length - 1].answer = '连接中断，请重试。'
     }
-  }).catch(() => {
+    
+    eventSource.addEventListener('end', () => {
+      loading.value = false
+      eventSource.close()
+    })
+    
+  } catch (error) {
     loading.value = false
-    QAHistory.value[QAHistory.value.length - 1].answer = '接口调用失败，请稍后重试。'
-  })
+    QAHistory.value[QAHistory.value.length - 1].answer = '请求失败，请检查网络连接后重试。'
+    console.error('API请求错误:', error)
+  }
 }
 
 // 页面初始化时获取模型列表
@@ -177,13 +267,21 @@ onMounted(async () => {
   try {
     const res = await fetch('/api/models')
     const data = await res.json()
-    modelList.value = data.models || []
-    // 默认选中第一个模型
+    modelList.value = data.models || [
+      'gpt-oss:20b',
+      'deepseek-r1:8b',
+      'deepseek-r1:32b',
+      'gemma3n:e4b',
+      'llama3.1:8b',
+      'llama2:latest',
+      'gemma2:2b',
+      'gemma3:27b'
+    ]
+    
     if (modelList.value.length > 0) {
       selectedModel.value = modelList.value[0]
     }
   } catch (e) {
-    // 如果接口异常，使用默认模型列表
     modelList.value = [
       'gpt-oss:20b',
       'deepseek-r1:8b',
@@ -200,193 +298,680 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 页面整体样式，居中并全屏 */
+/* 页面整体样式，现代化设计 */
 .qna-page {
   min-height: 100vh;
-  /* 页面最小高度为视口高度，实现全屏 */
-  width: 100vw;
-  /* 页面宽度为视口宽度，实现全屏 */
+  width: 100%;
   box-sizing: border-box;
-  /* 让 padding 和 border 包含在 width/height 内 */
   padding: 0;
   margin: 0;
   display: flex;
-  /* 使用 flex 布局，方便垂直排列内容 */
   flex-direction: column;
-  /* 子元素垂直排列 */
-  align-items: center;
-  /* 子元素水平居中 */
-  background: #f4f6fb;
-  /* 浅灰蓝色背景，提升页面质感 */
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  position: relative;
+}
+
+.qna-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(79, 140, 255, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(79, 140, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 /* 标题样式 */
 h2 {
-  margin-top: 48px;
-  /* 顶部留白 */
-  margin-bottom: 24px;
-  /* 标题下方留白 */
-  font-size: 2em;
-  /* 字体放大 */
-  font-weight: 600;
-  /* 加粗 */
-  color: #333;
-  /* 深色字体 */
+  margin: var(--spacing-xl) auto var(--spacing-lg);
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  position: relative;
+  padding-bottom: var(--spacing);
 }
 
+h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+  border-radius: 2px;
+}
 
 /* 答案区域样式 */
 .answer {
-  width: 80vw;
-  /* 答案区域宽度为视口的 80% */
+  width: 90%;
+  max-width: 1000px;
   flex: 1;
-  /* 占据剩余空间，保证内容区自适应高度 */
-  margin-bottom: 24px;
-  /* 底部留白 */
-  font-size: 1.1em;
-  /* 字体稍大 */
-  min-height: 200px;
-  /* 最小高度，防止内容太少时塌陷 */
-  white-space: pre-wrap;
-  /* 保留空格和换行，适合 markdown 内容 */
-  background: #fff;
-  /* 白色背景，突出内容区 */
-  padding: 24px;
-  /* 内边距，内容不贴边 */
-  border-radius: 8px;
-  /* 圆角，提升美观 */
+  margin: 0 auto var(--spacing-lg);
+  font-size: var(--font-size);
+  min-height: 300px;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-lg);
   box-sizing: border-box;
-  /* 让 padding 包含在 width 内 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  /* 轻微阴影，提升层次感 */
   overflow-y: auto;
-  /* 内容超出时可滚动 */
+  position: relative;
+  z-index: 1;
 }
 
-.answer .meta {
-  font-size: 0.9em;
-  color: #666;
-  margin-bottom: 6px;
+.answer::-webkit-scrollbar {
+  width: 8px;
 }
 
-.answer .qa-question {
-  align-items: flex-start;
-  width: auto;
-  font-size: 1.1em;
-  /* 字体稍大 */
-  font-weight: 600;
-  /* 加粗 */
-  color: #333;
-  /* 深色字体 */
-  margin-bottom: 12px;
-  /* 底部留白 */
-  padding: 12px;
-  /* 内边距，提升可读性 */
-  border-radius: 6px;
-  /* 圆角，提升美观 */
-  background: #f8f8fa;
-  /* 浅灰背景，区分于内容区 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  /* 轻微阴影，提升层次感 */
-  margin-top: 10px;
+.answer::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
 }
 
-.answer .bubble {
-  align-items: flex-start;
-  width: auto;
-  padding: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  white-space: pre-wrap;
-  font-size: 0.98em;
-  background: #eef6ff;
-  color: #062a4f;
-  border-top-left-radius: 4px;
-  text-align: left;
+.answer::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: 4px;
+  transition: background var(--transition);
 }
+
+.answer::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* QA项目样式 */
+.qa-item {
+  margin-bottom: var(--spacing-xl);
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.qa-item:nth-child(1) { animation-delay: 0.1s; }
+.qa-item:nth-child(2) { animation-delay: 0.2s; }
+.qa-item:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 用户信息样式 */
+.qna-item p {
+  margin: var(--spacing) 0 var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.qna-item p[style*="text-align: left"] {
+  padding-left: var(--spacing);
+}
+
+.qna-item p[style*="text-align: right"] {
+  padding-right: var(--spacing);
+}
+
+/* 问题气泡样式 */
+.qa-question {
+  margin: var(--spacing-sm) 0 var(--spacing);
+  max-width: 80%;
+}
+
+.qa-question .meta {
+  background: linear-gradient(135deg, var(--primary-light), rgba(79, 140, 255, 0.1));
+  color: var(--text-primary);
+  padding: var(--spacing) var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  border-bottom-left-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--primary-color);
+  position: relative;
+  overflow: hidden;
+  font-size: var(--font-size);
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.qa-question .meta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-color);
+}
+
+/* AI回答气泡样式 */
+.bubble {
+  margin: var(--spacing-sm) 0 var(--spacing);
+  max-width: 80%;
+  margin-left: auto;
+  position: relative;
+}
+
+.bubble .meta {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-sm);
+  text-align: right;
+  font-weight: 500;
+}
+
+.bubble > div:not(.meta) {
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+  color: var(--text-primary);
+  padding: var(--spacing) var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  border-bottom-right-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow);
+  border-right: 4px solid var(--primary-color);
+  position: relative;
+  overflow: hidden;
+  font-size: var(--font-size);
+  line-height: 1.6;
+  word-wrap: break-word;
+  animation: typewriter 0.3s ease-out;
+}
+
+@keyframes typewriter {
+  from {
+    opacity: 0;
+    transform: scaleX(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* 加载状态样式 */
+.loading {
+  display: inline-block;
+  padding: var(--spacing-sm) var(--spacing);
+  background: var(--warning-color);
+  color: var(--text-white);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
 /* 输入区域样式 */
 .input-area {
-  width: 80vw;
-  /* 输入区宽度与答案区一致 */
-  max-width: 77vw;
-  /* 最大宽度，防止超大屏幕过宽 */
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto var(--spacing-xl);
   display: flex;
-  /* 横向排列输入框、下拉框和按钮 */
-  gap: 12px;
-  /* 输入框、下拉框和按钮之间的间距 */
-  align-items: center;
-  /* 垂直居中 */
-  margin-bottom: 48px;
-  /* 底部留白 */
+  gap: var(--spacing);
+  align-items: flex-end;
+  position: relative;
+  z-index: 2;
+}
+
+.input-area:nth-of-type(2) {
+  margin-bottom: var(--spacing-lg);
 }
 
 /* 输入框样式 */
 .question-input {
   flex: 2;
-  /* 输入框占较大空间 */
-  padding: 12px;
-  /* 内边距，提升输入体验 */
-  font-size: 1em;
-  /* 字体适中 */
-  border-radius: 6px;
-  /* 圆角 */
-  border: 1px solid #ccc;
-  /* 浅灰色边框 */
-  background: #f8f8fa;
-  /* 浅灰背景，区分于内容区 */
+  padding: var(--spacing);
+  font-size: var(--font-size);
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--border-color);
+  background: var(--bg-primary);
   resize: vertical;
-  /* 只允许垂直方向调整大小 */
-  min-height: 40px;
-  /* 最小高度 */
+  min-height: 50px;
   max-height: 200px;
-  /* 最大高度 */
   font-family: inherit;
-  /* 使用系统默认字体 */
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
 }
 
-/* 模型选择输入框样式 */
+.question-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow), 0 0 0 3px rgba(79, 140, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.question-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* 模型选择样式 */
 .model-select {
   flex: 1;
-  /* 下拉框占较小空间 */
-  padding: 12px;
-  font-size: 1em;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: #f8f8fa;
-}
-
-/* 移除 datalist 下拉箭头样式 */
-.model-select::-webkit-calendar-picker-indicator {
-  opacity: 0.6;
-  /* 使下拉箭头略微透明 */
+  padding: var(--spacing);
+  font-size: var(--font-size);
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--border-color);
+  background: var(--bg-primary);
+  min-height: 50px;
   cursor: pointer;
-  /* 鼠标悬停变为手型 */
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
 }
 
-/* 按钮样式 */
-button {
-  padding: 12px 24px;
-  /* 按钮内边距，提升点击区域 */
-  font-size: 1em;
-  /* 字体适中 */
-  border-radius: 6px;
-  /* 圆角 */
+.model-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow), 0 0 0 3px rgba(79, 140, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+/* 按钮样式覆盖 */
+.qna-page button {
+  min-height: 50px;
+  padding: var(--spacing) var(--spacing-lg);
+  font-size: var(--font-size);
+  font-weight: 600;
+  border-radius: var(--border-radius-lg);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   border: none;
-  /* 去除默认边框 */
-  background: #4f8cff;
-  /* 蓝色背景，突出按钮 */
-  color: #fff;
-  /* 白色字体 */
+  color: var(--text-white);
   cursor: pointer;
-  /* 鼠标悬停变为手型 */
-  transition: background 0.2s;
-  /* 背景色渐变过渡，提升交互体验 */
+  transition: all var(--transition);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
-/* 按钮禁用样式 */
-button:disabled {
-  background: #b0c4e6;
-  /* 禁用时变为浅蓝色 */
+.qna-page button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.qna-page button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.qna-page button:hover:not(:disabled)::before {
+  width: 300px;
+  height: 300px;
+}
+
+.qna-page button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.qna-page button:disabled {
+  background: linear-gradient(135deg, var(--gray-300), var(--gray-400));
+  color: var(--gray-600);
   cursor: not-allowed;
-  /* 鼠标悬停变为禁止符号 */
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Markdown内容样式优化 */
+.answer :deep(pre) {
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing);
+  margin: var(--spacing) 0;
+  overflow-x: auto;
+  border-left: 4px solid var(--primary-color);
+}
+
+.answer :deep(code) {
+  background: var(--gray-100);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.answer :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.answer :deep(p) {
+  margin: var(--spacing) 0;
+  line-height: 1.7;
+}
+
+.answer :deep(h1),
+.answer :deep(h2),
+.answer :deep(h3),
+.answer :deep(h4),
+.answer :deep(h5),
+.answer :deep(h6) {
+  margin: var(--spacing-lg) 0 var(--spacing);
+  color: var(--text-primary);
+}
+
+.answer :deep(h1) { font-size: var(--font-size-2xl); }
+.answer :deep(h2) { font-size: var(--font-size-xl); }
+.answer :deep(h3) { font-size: var(--font-size-lg); }
+
+.answer :deep(ul),
+.answer :deep(ol) {
+  margin: var(--spacing) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.answer :deep(li) {
+  margin: var(--spacing-sm) 0;
+  line-height: 1.6;
+}
+
+.answer :deep(blockquote) {
+  border-left: 4px solid var(--primary-color);
+  padding-left: var(--spacing);
+  margin: var(--spacing) 0;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.answer :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--spacing) 0;
+}
+
+.answer :deep(th),
+.answer :deep(td) {
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-sm);
+  text-align: left;
+}
+
+.answer :deep(th) {
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+
+/* 输入容器样式 */
+.input-container {
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto var(--spacing-xl);
+  position: relative;
+  z-index: 2;
+}
+
+/* 系统提示词区域 */
+.system-prompt-area {
+  margin-bottom: var(--spacing);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: all var(--transition);
+}
+
+.input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.input-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.toggle-btn:hover,
+.toggle-btn.active {
+  background: var(--primary-color);
+  color: var(--text-white);
+  border-color: var(--primary-color);
+}
+
+.system-prompt {
+  background: var(--bg-primary);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+}
+
+/* 输入区域样式 */
+.input-area {
+  display: flex;
+  gap: var(--spacing);
+  align-items: flex-end;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition);
+}
+
+.input-area:focus-within {
+  box-shadow: var(--shadow-xl), 0 0 0 2px var(--primary-color);
+}
+
+.controls {
+  display: flex;
+  gap: var(--spacing);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.submit-btn {
+  position: relative;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: var(--spacing-sm);
+}
+
+/* 问题区域样式 */
+.question-section,
+.answer-section {
+  display: flex;
+  margin-bottom: var(--spacing-lg);
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.user-avatar,
+.ai-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+}
+
+.ai-avatar {
+  background: linear-gradient(135deg, var(--success-color), #1e7e34);
+}
+
+.qa-question,
+.bubble {
+  flex: 1;
+}
+
+/* 加载点动画 */
+.loading-dots {
+  display: flex;
+  gap: 4px;
+  padding: var(--spacing);
+  align-items: center;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: 0s; }
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 空状态样式 */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing);
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing);
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  font-size: var(--font-size);
+  opacity: 0.7;
+}
+
+/* 错误提示样式 */
+.error-toast {
+  position: fixed;
+  top: var(--spacing-xl);
+  right: var(--spacing-xl);
+  background: var(--danger-color);
+  color: var(--text-white);
+  padding: var(--spacing) var(--spacing-lg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-modal);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@media (max-width: 1024px) {
+  .answer,
+  .input-area {
+    width: 95%;
+  }
+  
+  h2 {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+@media (max-width: 768px) {
+  .qna-page {
+    padding: var(--spacing);
+  }
+  
+  h2 {
+    font-size: var(--font-size-xl);
+    margin: var(--spacing) 0 var(--spacing-lg);
+  }
+  
+  .answer,
+  .input-area {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  .input-area {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .question-input,
+  .model-select,
+  .qna-page button {
+    width: 100%;
+  }
+  
+  .qa-question,
+  .bubble {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  h2 {
+    font-size: var(--font-size-lg);
+  }
+  
+  .answer {
+    padding: var(--spacing);
+    min-height: 200px;
+  }
+  
+  .qa-question .meta,
+  .bubble > div:not(.meta) {
+    padding: var(--spacing-sm) var(--spacing);
+    font-size: var(--font-size-sm);
+  }
 }
 </style>
