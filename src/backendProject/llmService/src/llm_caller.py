@@ -80,7 +80,7 @@ def save_to_his(need_save, save_data, subfix, logger):
             # If image_path exists, embed the image in the markdown
             if 'image_path' in save_data and save_data['image_path']:
                 image_filename = save_data['image_path'].split('/')[-1]  # Extract filename from path
-                f.write(f"![Uploaded Image](../{save_data['image_path']})\n\n")
+                f.write(f"![Uploaded Image](http://localhost:5173/api/image/{save_data['image_path']})\n\n")
 
             f.write(f"# answer: \n {save_data['answer']}\n")
             if logger:
