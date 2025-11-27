@@ -66,9 +66,10 @@
         <p class="error">{{ error }}</p>
       </div>
       
-      <div v-if="response" class="response-section">
+      <div class="response-section">
         <h3>AI 分析结果</h3>
         <div class="response-content" v-html="renderedResponse"></div>
+        <div v-if="isSubmitting" class="streaming-indicator">AI正在分析中...</div>
       </div>
     </div>
   </div>
@@ -230,7 +231,7 @@ const submitImageChat = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000); // 20 minutes
 
-    const response = await fetch('/api/image_chat', {
+    const apiResponse = await fetch('/api/image_chat', {
       method: 'POST',
       body: formData,
       signal: controller.signal
@@ -238,15 +239,59 @@ const submitImageChat = async () => {
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!apiResponse.ok) {
+      throw new Error(`HTTP error! status: ${apiResponse.status}`);
     }
 
-    const result = await response.json();
-    if (result.code === 0) {
-      response.value = result.content;
+    // Check if the response is in text/event-stream format for streaming
+    const contentType = apiResponse.headers.get('Content-Type');
+
+    if (contentType && contentType.includes('text/event-stream')) {
+      // Handle streaming response
+      const reader = apiResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep last incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6); // Remove 'data: ' prefix
+            if (data === '[DONE]') {
+              isSubmitting.value = false;
+              isLoading.value = false;
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                response.value += parsed.text;
+              }
+            } catch (e) {
+              // If JSON parsing fails, add raw data to response
+              if (data.trim()) {
+                response.value += data;
+              }
+            }
+          }
+        }
+      }
     } else {
-      throw new Error(result.msg || 'API请求失败');
+      // Handle regular JSON response
+      const result = await apiResponse.json();
+      if (result.code === 0) {
+        response.value = result.content;
+      } else {
+        throw new Error(result.msg || 'API请求失败');
+      }
     }
   } catch (err) {
     console.error('提交图片对话请求失败:', err);
@@ -288,7 +333,7 @@ onMounted(async () => {
 }
 
 .chat-container {
-  max-width: 800px;
+  max-width: 1000px; /* Increased width to accommodate more content */
   margin: 0 auto;
   width: 100%;
   background: #fff;
@@ -521,5 +566,15 @@ onMounted(async () => {
   border: 1px solid #ddd;
   padding: 8px 12px;
   text-align: left;
+}
+
+.streaming-indicator {
+  margin-top: 10px;
+  padding: 8px;
+  background: #e8f4ff;
+  text-align: center;
+  font-style: italic;
+  color: #4f8cff;
+  border-radius: 4px;
 }
 </style>
