@@ -1,5 +1,6 @@
 # app.py
 import base64
+import json
 import os
 import time
 import urllib
@@ -185,16 +186,14 @@ def image_chat():
                     token = thinking
                 else:
                     token = part["message"]["content"]
-                logger.info(token)
                 answer += token
-                yield token  # 每次一个 token
+                logger.info(token)
+                yield f"data: {json.dumps({'text': token})}\n\n"
                 # 以\n为分割，获取最后一个文字
-            file_name = answer.split("\n")[-1]
-            if not file_name:
-                file_name = answer.split("\n")[-2]
-
+            yield "data: [DONE]\n\n"
             global postfix
-            save_to_his(True, {"model": model, "prompt": prompt, "answer": answer}, postfix)
+            logger.info(f"len(answer): {len(answer)}")
+            save_to_his(True, {"model": model, "prompt": prompt, "answer": answer}, postfix, logger)
 
         except Exception as e:
             yield f"[ERROR] {str(e)}"

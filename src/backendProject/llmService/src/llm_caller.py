@@ -62,17 +62,19 @@ def ollama_stream_inner(prompt, target_model, subfix, need_save=False):
     # chat_collection.insert_one(chat_record)
     # logger.info("数据已保存到MongoDB")
     # 保存到history 下面
-    save_to_his(need_save, save_data, subfix)
+    save_to_his(need_save, save_data, subfix, None)
 
 
-def save_to_his(need_save, save_data, subfix):
+def save_to_his(need_save, save_data, subfix, logger):
     if need_save:
         random_id = str(uuid.uuid4())
         if not os.path.exists(f"history/history_{subfix}"):
             os.mkdir(f"history/history_{subfix}")
         with open(f"history/history_{subfix}/history_{random_id}.md", "a") as f:
-            logger.info("保存数据")
+            if logger:
+                logger.info(f"save_data")
             f.write(f"# model: {save_data['model']}\n")
             f.write(f"# prompt: {save_data['prompt']}\n")
             f.write(f"# answer: \n {save_data['answer']}\n")
-            logger.info("保存成功")
+            if logger:
+                logger.info(f"save_data ok")
