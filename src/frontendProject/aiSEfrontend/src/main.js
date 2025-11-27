@@ -6,6 +6,7 @@ import QnAv2 from './components/QnAv2.vue'
 import ProjectEngine from './components/ProjectEngine.vue'
 import CustomProjectEngine from './components/CustomProjectEngine.vue'
 import SoftwareProjectEngine from './components/SoftwareProjectEngine.vue'
+import HistoryQA from './components/HistoryQA.vue'
 
 createApp(App)
   .component('QnAPage', QnAPage)
@@ -13,4 +14,5 @@ createApp(App)
   .component('ProjectEngine', ProjectEngine)
   .component('CustomProjectEngine', CustomProjectEngine)
   .component('SoftwareProjectEngine', SoftwareProjectEngine)
+  .component('HistoryQA', HistoryQA)
   .mount('#app')

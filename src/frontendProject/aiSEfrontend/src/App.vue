@@ -4,7 +4,8 @@ import QnAPage from './pages/QnAPage.vue'
 import QnAv2 from './components/QnAv2.vue'
 import ProjectEngine from './components/ProjectEngine.vue'
 import CustomProjectEngine from './components/CustomProjectEngine.vue'
-import SoftwarerojectEngine from './components/SoftwareProjectEngine.vue'
+import SoftwareProjectEngine from './components/SoftwareProjectEngine.vue'
+import HistoryQA from './components/HistoryQA.vue'
 
 const mode = ref('qna') // 默认问答模式
 </script>
@@ -18,14 +19,16 @@ const mode = ref('qna') // 默认问答模式
         <button :class="{ active: mode === 'project' }" @click="mode = 'project'">软件项目模式v1</button>
         <button :class="{ active: mode === 'customproject' }" @click="mode = 'customproject'">自定义项目模式</button>
         <button :class="{ active: mode === 'softwareproject' }" @click="mode = 'softwareproject'">软件项目模式v2</button>
+        <button :class="{ active: mode === 'history' }" @click="mode = 'history'">历史问答</button>
       </div>
-      
+
       <div class="content-area">
         <QnAPage v-if="mode === 'qna'" />
         <QnAv2 v-if="mode === 'qnav2'" />
         <ProjectEngine v-if="mode === 'project'" />
         <CustomProjectEngine v-if="mode === 'customproject'" />
-        <SoftwarerojectEngine v-if="mode === 'softwareproject'" />
+        <SoftwareProjectEngine v-if="mode === 'softwareproject'" />
+        <HistoryQA v-if="mode === 'history'" />
       </div>
     </div>
   </div>
