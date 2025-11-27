@@ -287,6 +287,11 @@ onMounted(async () => {
 
 .content-area {
   line-height: 1.6;
+  text-align: left;
+}
+
+.content-area :deep(*) {
+  text-align: left !important;
 }
 
 .content-area :deep(h1),
@@ -298,6 +303,7 @@ onMounted(async () => {
   margin-top: 1.2em;
   margin-bottom: 0.8em;
   color: #2c3e50;
+  text-align: left;
 }
 
 .content-area :deep(pre) {
@@ -306,17 +312,20 @@ onMounted(async () => {
   padding: 12px;
   overflow-x: auto;
   margin: 12px 0;
+  text-align: left;
 }
 
 .content-area :deep(code) {
   font-family: 'Monaco', 'Consolas', monospace;
   font-size: 0.9em;
+  text-align: left;
 }
 
 .content-area :deep(pre code) {
   background: none;
   padding: 0;
   border-radius: 0;
+  text-align: left;
 }
 
 .content-area :deep(blockquote) {
@@ -324,6 +333,7 @@ onMounted(async () => {
   padding-left: 16px;
   margin: 12px 0;
   color: #666;
+  text-align: left;
 }
 
 .content-area :deep(a) {
@@ -339,6 +349,7 @@ onMounted(async () => {
   width: 100%;
   border-collapse: collapse;
   margin: 12px 0;
+  text-align: left;
 }
 
 .content-area :deep(th),
