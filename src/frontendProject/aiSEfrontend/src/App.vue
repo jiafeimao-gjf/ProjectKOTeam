@@ -6,6 +6,7 @@ import ProjectEngine from './components/ProjectEngine.vue'
 import CustomProjectEngine from './components/CustomProjectEngine.vue'
 import SoftwareProjectEngine from './components/SoftwareProjectEngine.vue'
 import HistoryQA from './components/HistoryQA.vue'
+import ImageChat from './components/ImageChat.vue'
 
 const mode = ref('qna') // 默认问答模式
 </script>
@@ -20,6 +21,7 @@ const mode = ref('qna') // 默认问答模式
         <button :class="{ active: mode === 'customproject' }" @click="mode = 'customproject'">自定义项目模式</button>
         <button :class="{ active: mode === 'softwareproject' }" @click="mode = 'softwareproject'">软件项目模式v2</button>
         <button :class="{ active: mode === 'history' }" @click="mode = 'history'">历史问答</button>
+        <button :class="{ active: mode === 'imagechat' }" @click="mode = 'imagechat'">图片对话</button>
       </div>
 
       <div class="content-area">
@@ -29,6 +31,7 @@ const mode = ref('qna') // 默认问答模式
         <CustomProjectEngine v-if="mode === 'customproject'" />
         <SoftwareProjectEngine v-if="mode === 'softwareproject'" />
         <HistoryQA v-if="mode === 'history'" />
+        <ImageChat v-if="mode === 'imagechat'" />
       </div>
     </div>
   </div>
