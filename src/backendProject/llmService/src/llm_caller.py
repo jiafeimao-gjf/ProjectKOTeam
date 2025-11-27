@@ -82,7 +82,7 @@ def save_to_his(need_save, save_data, subfix, logger):
                 f.write(f"""
 <div style="text-align: center;">
   <img src="http://localhost:5173/api/{save_data['image_path']}" style="max-width: 33%; height: auto;" />
-</div>
+</div>\n\n
                 """)
 
             f.write(f"# answer: \n {save_data['answer']}\n")
