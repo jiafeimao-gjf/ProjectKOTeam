@@ -443,7 +443,7 @@ h2::after {
   border-radius: 2px;
 }
 
-/* 答案区域样式 - 简洁设计 */
+/* 答案区域样式 - 简洁设计 with fix for scrolling */
 .answer {
   width: 90%;
   max-width: 900px;
@@ -451,6 +451,7 @@ h2::after {
   margin: 0 auto var(--spacing-xl);
   font-size: var(--font-size);
   min-height: 300px;
+  height: calc(100vh - 300px); /* Fixed height to enable proper scrolling */
   background: rgba(255, 255, 255, 0.8);
   border-radius: var(--border-radius-lg);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -464,17 +465,17 @@ h2::after {
 }
 
 .answer::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .answer::-webkit-scrollbar-track {
   background: rgba(241, 245, 249, 0.5);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .answer::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 4px;
   transition: background var(--transition);
 }
 
@@ -558,6 +559,7 @@ h2::after {
   line-height: 1.6;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.2s ease-out;
+  min-width: 200px; /* Ensure minimum width for readability */
 }
 
 .user-bubble {
@@ -574,6 +576,14 @@ h2::after {
   color: #334155;
   border-bottom-left-radius: var(--border-radius-sm);
   align-self: flex-end;
+  width: 100%; /* Make it responsive */
+}
+
+/* Answer content styling to fix markdown rendering */
+.answer-content {
+  width: 100%;
+  line-height: 1.6;
+  word-wrap: break-word;
 }
 
 @keyframes fadeIn {
@@ -717,66 +727,73 @@ h2::after {
   100% { transform: rotate(360deg); }
 }
 
-/* Markdown内容样式优化 */
-.answer :deep(p) {
+/* Markdown内容样式优化 - Enhanced for better rendering */
+.answer :deep(.answer-content p) {
   margin: var(--spacing-sm) 0;
   line-height: 1.7;
   color: #334155;
 }
 
-.answer :deep(pre) {
-  background: #f8fafc;
+.answer :deep(.answer-content pre) {
+  background: #f1f5f9;
   border-radius: var(--border-radius);
   padding: var(--spacing);
   margin: var(--spacing-sm) 0;
   overflow-x: auto;
   border: 1px solid #e2e8f0;
   border-left: 3px solid #6366f1;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
-.answer :deep(code) {
-  background: #f1f5f9;
+.answer :deep(.answer-content code) {
+  background: #f8fafc;
   padding: 2px 6px;
   border-radius: var(--border-radius-sm);
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   color: #475569;
+  overflow-x: auto;
 }
 
-.answer :deep(pre code) {
+.answer :deep(.answer-content pre code) {
   background: none;
   padding: 0;
   border: none;
   color: #334155;
+  display: block;
+  white-space: pre-wrap;
 }
 
-.answer :deep(h1),
-.answer :deep(h2),
-.answer :deep(h3),
-.answer :deep(h4),
-.answer :deep(h5),
-.answer :deep(h6) {
+.answer :deep(.answer-content h1),
+.answer :deep(.answer-content h2),
+.answer :deep(.answer-content h3),
+.answer :deep(.answer-content h4),
+.answer :deep(.answer-content h5),
+.answer :deep(.answer-content h6) {
   margin: var(--spacing) 0 var(--spacing-sm);
   color: #1e293b;
   font-weight: 600;
+  line-height: 1.4;
 }
 
-.answer :deep(h1) { font-size: var(--font-size-xl); }
-.answer :deep(h2) { font-size: var(--font-size-lg); }
-.answer :deep(h3) { font-size: var(--font-size-base); }
+.answer :deep(.answer-content h1) { font-size: var(--font-size-xl); }
+.answer :deep(.answer-content h2) { font-size: var(--font-size-lg); }
+.answer :deep(.answer-content h3) { font-size: var(--font-size-base); }
 
-.answer :deep(ul),
-.answer :deep(ol) {
+.answer :deep(.answer-content ul),
+.answer :deep(.answer-content ol) {
   margin: var(--spacing-sm) 0;
   padding-left: var(--spacing-lg);
+  line-height: 1.6;
 }
 
-.answer :deep(li) {
+.answer :deep(.answer-content li) {
   margin: var(--spacing-xs) 0;
   line-height: 1.6;
 }
 
-.answer :deep(blockquote) {
+.answer :deep(.answer-content blockquote) {
   border-left: 3px solid #6366f1;
   padding-left: var(--spacing);
   margin: var(--spacing-sm) 0;
@@ -787,21 +804,23 @@ h2::after {
   border-radius: var(--border-radius-sm);
 }
 
-.answer :deep(table) {
+.answer :deep(.answer-content table) {
   width: 100%;
   border-collapse: collapse;
   margin: var(--spacing-sm) 0;
   border: 1px solid #e2e8f0;
+  display: block;
+  overflow-x: auto;
 }
 
-.answer :deep(th),
-.answer :deep(td) {
+.answer :deep(.answer-content th),
+.answer :deep(.answer-content td) {
   border: 1px solid #e2e8f0;
   padding: var(--spacing-sm);
   text-align: left;
 }
 
-.answer :deep(th) {
+.answer :deep(.answer-content th) {
   background: #f1f5f9;
   font-weight: 600;
 }
