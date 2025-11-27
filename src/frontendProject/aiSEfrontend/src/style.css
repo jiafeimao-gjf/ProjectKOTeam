@@ -36,6 +36,10 @@
   
   /* 边框和阴影 */
   --border-color: #dee2e6;
+  --border-light: #f1f3f4;
+  --border-medium: #e1e4e8;
+  --border-dark: #d1d5da;
+  --border-focus: #4f8cff;
   --border-radius-sm: 4px;
   --border-radius: 8px;
   --border-radius-lg: 12px;

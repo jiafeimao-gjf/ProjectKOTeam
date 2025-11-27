@@ -63,6 +63,8 @@ const mode = ref('qna') // 默认问答模式
   display: flex;
   height: 100vh;
   overflow: hidden;
+  border: 1px solid var(--border-dark);
+  box-sizing: border-box;
 }
 
 .mode-switch {
@@ -72,7 +74,7 @@ const mode = ref('qna') // 默认问答模式
   padding: var(--spacing-lg);
   width: 240px;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-  border-right: 1px solid var(--border-color);
+  border-right: 2px solid var(--border-medium);
   box-shadow: var(--shadow);
   overflow-y: auto;
   position: relative;
@@ -83,21 +85,31 @@ const mode = ref('qna') // 默认问答模式
   position: absolute;
   top: 0;
   right: 0;
-  width: 1px;
+  width: 2px;
   height: 100%;
   background: linear-gradient(to bottom, 
     transparent, 
-    var(--border-color) 10%, 
-    var(--border-color) 90%, 
+    var(--border-medium) 5%, 
+    var(--border-medium) 95%, 
     transparent
   );
+}
+
+.mode-switch::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--border-medium);
 }
 
 .mode-switch button {
   padding: var(--spacing-sm) var(--spacing);
   font-size: var(--font-size-sm);
   border-radius: var(--border-radius);
-  border: 2px solid transparent;
+  border: 2px solid var(--border-medium);
   background: var(--bg-primary);
   color: var(--text-secondary);
   cursor: pointer;
@@ -107,6 +119,7 @@ const mode = ref('qna') // 默认问答模式
   overflow: hidden;
   font-weight: 500;
   box-shadow: var(--shadow-sm);
+  position: relative;
 }
 
 .mode-switch button::before {
@@ -125,6 +138,7 @@ const mode = ref('qna') // 默认问答模式
   color: var(--primary-color);
   transform: translateX(4px);
   box-shadow: var(--shadow);
+  border-color: var(--primary-color);
 }
 
 .mode-switch button:hover::before {
@@ -169,6 +183,7 @@ const mode = ref('qna') // 默认问答模式
   height: 100%;
   background: var(--bg-secondary);
   position: relative;
+  border-left: 1px solid var(--border-light);
 }
 
 .content-area::before {
@@ -177,13 +192,25 @@ const mode = ref('qna') // 默认问答模式
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
+  height: 2px;
   background: linear-gradient(to right, 
-    transparent, 
-    var(--border-color) 20%, 
-    var(--border-color) 80%, 
-    transparent
+    var(--border-medium), 
+    var(--border-dark) 20%, 
+    var(--border-dark) 80%, 
+    var(--border-medium)
   );
+}
+
+.content-area::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid var(--border-light);
+  border-top: none;
+  pointer-events: none;
 }
 
 /* 确保所有子组件都能自适应显示 */

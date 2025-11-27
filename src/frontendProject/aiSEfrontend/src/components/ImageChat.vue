@@ -357,14 +357,16 @@ h2::after {
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-lg);
   transition: all var(--transition);
+  border: 2px solid var(--border-medium);
 }
 
 .image-upload-section:hover {
   box-shadow: var(--shadow-xl);
+  border-color: var(--border-dark);
 }
 
 .upload-area {
-  border: 3px dashed var(--border-color);
+  border: 3px dashed var(--border-medium);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-xxl);
   text-align: center;
@@ -392,6 +394,7 @@ h2::after {
   border-color: var(--primary-color);
   background: var(--primary-light);
   transform: scale(1.02);
+  border-style: solid;
 }
 
 .upload-area:hover::before,
@@ -483,6 +486,7 @@ h2::after {
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-lg);
+  border: 2px solid var(--border-medium);
 }
 
 .prompt-input {
@@ -490,8 +494,8 @@ h2::after {
   min-height: 120px;
   margin-bottom: var(--spacing);
   padding: var(--spacing);
-  border: 2px solid var(--border-color);
-  border-radius: var(--border-radius);
+  border: 2px solid var(--border-medium);
+  border-radius: var(--border-radius-lg);
   font-family: inherit;
   font-size: var(--font-size);
   background: var(--bg-primary);

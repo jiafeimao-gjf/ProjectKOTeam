@@ -373,6 +373,7 @@ onMounted(async () => {
   flex-direction: column;
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   position: relative;
+  border: 1px solid var(--border-light);
 }
 
 .qna-page::before {
@@ -426,6 +427,7 @@ h2::after {
   overflow-y: auto;
   position: relative;
   z-index: 1;
+  border: 2px solid var(--border-medium);
 }
 
 .answer::-webkit-scrollbar {
@@ -499,6 +501,9 @@ h2::after {
   border-bottom-left-radius: var(--border-radius-sm);
   box-shadow: var(--shadow);
   border-left: 4px solid var(--primary-color);
+  border-top: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-medium);
   position: relative;
   overflow: hidden;
   font-size: var(--font-size);
@@ -540,6 +545,9 @@ h2::after {
   border-bottom-right-radius: var(--border-radius-sm);
   box-shadow: var(--shadow);
   border-right: 4px solid var(--primary-color);
+  border-top: 1px solid var(--border-light);
+  border-left: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-medium);
   position: relative;
   overflow: hidden;
   font-size: var(--font-size);
@@ -592,7 +600,7 @@ h2::after {
   padding: var(--spacing);
   font-size: var(--font-size);
   border-radius: var(--border-radius-lg);
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--border-medium);
   background: var(--bg-primary);
   resize: vertical;
   min-height: 50px;
@@ -771,6 +779,10 @@ h2::after {
   margin: 0 auto var(--spacing-xl);
   position: relative;
   z-index: 2;
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow);
 }
 
 /* 系统提示词区域 */
@@ -778,9 +790,11 @@ h2::after {
   margin-bottom: var(--spacing);
   background: var(--bg-primary);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: all var(--transition);
+  border: 1px solid var(--border-light);
+  border-bottom: 2px solid var(--border-medium);
 }
 
 .input-header {
@@ -789,7 +803,7 @@ h2::after {
   align-items: center;
   padding: var(--spacing) var(--spacing-lg);
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-medium);
 }
 
 .input-label {
@@ -832,10 +846,13 @@ h2::after {
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-lg);
   transition: all var(--transition);
+  border: 1px solid var(--border-light);
+  border-top: 2px solid var(--border-medium);
 }
 
 .input-area:focus-within {
   box-shadow: var(--shadow-xl), 0 0 0 2px var(--primary-color);
+  border-color: var(--border-focus);
 }
 
 .controls {
@@ -843,6 +860,8 @@ h2::after {
   gap: var(--spacing);
   align-items: center;
   flex-shrink: 0;
+  border-left: 1px solid var(--border-light);
+  padding-left: var(--spacing);
 }
 
 .submit-btn {
