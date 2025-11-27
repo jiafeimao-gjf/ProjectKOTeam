@@ -2,7 +2,7 @@
   <div class="qna-page">
     <h2>🤖 本地AI助手</h2>
     
-    <div class="answer" id="md" ref="answerContainer">
+    <div class="answer" ref="answerContainer">
       <div v-if="QAHistory.length === 0 && !loading" class="empty-state">
         <div class="empty-icon">💬</div>
         <h3>开始你的对话</h3>
@@ -25,6 +25,11 @@
               <span></span>
               <span></span>
               <span></span>
+            </div>
+            <!-- 流式渲染时显示原始文本，完成后显示格式化HTML -->
+            <div v-if="index === currentAnswerIndex && isStreaming" class="streaming-text">
+              {{ qa.answer }}
+              <span class="typing-cursor" v-if="loading">|</span>
             </div>
             <div v-else v-html="getRenderedAnswer(index)" class="answer-content"></div>
           </div>
@@ -90,6 +95,8 @@ import { marked } from 'marked'
 import hljs from 'highlight.js'
 // 代码高亮样式
 import 'highlight.js/styles/github.css'
+// XSS保护
+import DOMPurify from 'dompurify'
 
 // 响应式状态
 const question = ref('')
@@ -101,6 +108,8 @@ const QAHistory = ref([])
 const questionTextarea = ref(null)
 const answerContainer = ref(null)
 const showSystemPrompt = ref(false)
+const isStreaming = ref(false) // 新增：流式渲染状态
+const currentAnswerIndex = ref(-1) // 新增：当前正在流式回答的索引
 
 // SSE 事件源对象
 let eventSource = null
@@ -158,7 +167,17 @@ function getLastAnswer() {
 // 获取渲染答案
 function getRenderedAnswer(index) {
   const qaTemp = QAHistory.value[index]
-  return marked.parse(qaTemp.answer)
+  if (!qaTemp || !qaTemp.answer) return ''
+  
+  // 对于当前正在流式回答的索引，直接返回原始文本以支持逐字显示
+  if (index === currentAnswerIndex.value && isStreaming.value) {
+    return qaTemp.answer
+  }
+  
+  // 对于其他已完成的回答，返回格式化HTML
+  const rawHtml = marked.parse(qaTemp.answer)
+  const cleanHtml = DOMPurify.sanitize(rawHtml)
+  return cleanHtml
 }
 
 // 自动滚动到底部
@@ -170,13 +189,30 @@ function scrollToBottom() {
   })
 }
 
+// 代码高亮函数
+function highlightCodeBlocks() {
+  if (answerContainer.value) {
+    try {
+      answerContainer.value.querySelectorAll('pre code').forEach(block => {
+        if (block.textContent.trim()) {
+          hljs.highlightElement(block)
+        }
+      })
+    } catch (error) {
+      console.warn('代码高亮失败:', error)
+    }
+  }
+}
+
 // 监听QA历史变化，自动滚动和高亮代码
 watch(QAHistory, async () => {
   await nextTick()
   scrollToBottom()
-  document.querySelectorAll('#md pre code').forEach(block => {
-    hljs.highlightElement(block)
-  })
+  
+  // 只在非流式状态下进行代码高亮
+  if (!isStreaming.value) {
+    highlightCodeBlocks()
+  }
 })
 
 // 提交问题，流式获取答案
@@ -192,6 +228,7 @@ async function askQuestion() {
   }
 
   loading.value = true
+  isStreaming.value = true // 开始流式渲染
 
   const qa = {
     question: systemPrompt.value + "\n" + question.value,
@@ -200,6 +237,7 @@ async function askQuestion() {
   }
 
   QAHistory.value.push(qa)
+  currentAnswerIndex.value = QAHistory.value.length - 1 // 设置当前流式回答索引
 
   // 清空输入框并重置高度
   question.value = ''
@@ -230,34 +268,60 @@ async function askQuestion() {
     eventSource.onmessage = (event) => {
       if (event.data === '[DONE]') {
         loading.value = false
+        isStreaming.value = false // 结束流式渲染
         eventSource.close()
+        
+        // 渲染最终的格式化内容
+        nextTick(() => {
+          highlightCodeBlocks()
+        })
+        
+        console.log('流式响应完成')
         return
       }
       
       try {
         const data = JSON.parse(event.data)
         if (data.text) {
-          QAHistory.value[QAHistory.value.length - 1].answer += data.text
+          // 逐字追加文本
+          QAHistory.value[currentAnswerIndex.value].answer += data.text
+          console.log('接收到文本:', data.text.substring(0, 20) + '...')
+          
+          // 自动滚动到底部
+          nextTick(() => {
+            scrollToBottom()
+          })
         }
       } catch (e) {
-        QAHistory.value[QAHistory.value.length - 1].answer += event.data
+        QAHistory.value[currentAnswerIndex.value].answer += event.data
+        console.log('接收到原始数据:', event.data.substring(0, 20) + '...')
+        
+        // 自动滚动到底部
+        nextTick(() => {
+          scrollToBottom()
+        })
       }
     }
     
     eventSource.onerror = () => {
       loading.value = false
+      isStreaming.value = false
       eventSource.close()
-      QAHistory.value[QAHistory.value.length - 1].answer = '连接中断，请重试。'
+      QAHistory.value[currentAnswerIndex.value].answer = '连接中断，请重试。'
+      console.error('SSE连接错误')
     }
     
     eventSource.addEventListener('end', () => {
       loading.value = false
+      isStreaming.value = false
       eventSource.close()
+      console.log('SSE流结束')
     })
     
   } catch (error) {
     loading.value = false
-    QAHistory.value[QAHistory.value.length - 1].answer = '请求失败，请检查网络连接后重试。'
+    isStreaming.value = false
+    QAHistory.value[currentAnswerIndex.value].answer = '请求失败，请检查网络连接后重试。'
     console.error('API请求错误:', error)
   }
 }
@@ -834,7 +898,39 @@ h2::after {
   flex: 1;
 }
 
-/* 加载点动画 */
+/* 流式文本样式 */
+.streaming-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+  font-family: inherit;
+  font-size: var(--font-size);
+  color: var(--text-primary);
+  background: transparent;
+  min-height: 1.2em;
+}
+
+.typing-cursor {
+  color: var(--primary-color);
+  font-weight: bold;
+  animation: blink 1s infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 流式内容过渡动画 */
+.streaming-text {
+  animation: fadeIn 0.1s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
 .loading-dots {
   display: flex;
   gap: 4px;
