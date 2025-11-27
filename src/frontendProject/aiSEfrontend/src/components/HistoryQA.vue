@@ -11,16 +11,15 @@
     </div>
 
     <div v-else class="history-content">
-      <div class="history-controls">
-        <input
-          type="text"
-          v-model="searchQuery"
-          placeholder="搜索日期 (例如: 2025-08-09 或 20250809)"
-          class="search-input"
-        />
-      </div>
-
       <div class="history-list">
+        <div class="search-container">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="搜索日期 (例如: 2025-08-09 或 20250809)"
+            class="search-input"
+          />
+        </div>
         <div
           v-for="[date, files] in filteredHistoryList"
           :key="date"
@@ -315,13 +314,24 @@ onMounted(async () => {
   height: calc(100vh - 140px);
 }
 
+.search-container {
+  margin-bottom: 15px;
+  padding: 0 4px; /* Add some padding to align with date groups */
+}
+
 .search-input {
   width: 100%;
   padding: 10px;
-  margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 14px;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.2);
 }
 
 .history-list {
