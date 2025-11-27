@@ -443,7 +443,7 @@ h2::after {
   border-radius: 2px;
 }
 
-/* 答案区域样式 - 简洁设计 with fix for scrolling */
+/* 答案区域样式 - 简洁设计 with fix for scrolling and input area overlap */
 .answer {
   width: 90%;
   max-width: 900px;
@@ -451,7 +451,7 @@ h2::after {
   margin: 0 auto var(--spacing-xl);
   font-size: var(--font-size);
   min-height: 300px;
-  height: calc(100vh - 300px); /* Fixed height to enable proper scrolling */
+  height: calc(100vh - 250px); /* Fixed height to enable proper scrolling, accounting for input area */
   background: rgba(255, 255, 255, 0.8);
   border-radius: var(--border-radius-lg);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -462,6 +462,7 @@ h2::after {
   z-index: 1;
   border: 1px solid rgba(148, 163, 184, 0.2);
   backdrop-filter: blur(10px);
+  margin-bottom: 20px; /* Ensure space for fixed input area */
 }
 
 .answer::-webkit-scrollbar {
@@ -505,12 +506,14 @@ h2::after {
   }
 }
 
-/* 消息项样式 - 更简洁 */
+/* 消息项样式 - 更简洁 with fix for overlapping */
 .message-item {
-  margin-bottom: var(--spacing);
+  margin-bottom: var(--spacing-lg);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  width: 100%;
+  align-self: stretch; /* Ensure full width allocation */
 }
 
 .message-item.user {
@@ -548,7 +551,7 @@ h2::after {
   border-color: #cbd5e1;
 }
 
-/* 气泡样式 - 简约现代 */
+/* 气泡样式 - 简约现代 with fix for overlapping */
 .bubble {
   display: inline-block;
   max-width: 100%;
@@ -560,6 +563,8 @@ h2::after {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.2s ease-out;
   min-width: 200px; /* Ensure minimum width for readability */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .user-bubble {
@@ -568,6 +573,7 @@ h2::after {
   color: #1e40af;
   border-bottom-right-radius: var(--border-radius-sm);
   align-self: flex-start;
+  max-width: 85%; /* Limit width to prevent overlapping */
 }
 
 .ai-bubble {
@@ -576,7 +582,7 @@ h2::after {
   color: #334155;
   border-bottom-left-radius: var(--border-radius-sm);
   align-self: flex-end;
-  width: 100%; /* Make it responsive */
+  max-width: 85%; /* Limit width to prevent overlapping */
 }
 
 /* Answer content styling to fix markdown rendering */
@@ -825,7 +831,7 @@ h2::after {
   font-weight: 600;
 }
 
-/* 底部固定容器 - 简约设计 */
+/* 底部固定容器 - 简约设计 with fix to prevent overlap */
 .bottom-bar {
   position: fixed;
   bottom: 0;
@@ -833,13 +839,14 @@ h2::after {
   right: 0;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  padding: var(--spacing) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   border-top: 1px solid #e2e8f0;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
   z-index: 100;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  min-height: 120px; /* Set minimum height for the input area */
 }
 
 .bottom-bar .bar-row {
