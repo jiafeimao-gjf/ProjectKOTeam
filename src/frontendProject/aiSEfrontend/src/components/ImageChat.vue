@@ -56,11 +56,10 @@
             v-model="prompt"
             placeholder="请输入对图片的描述或问题..."
             class="prompt-input"
-            :disabled="!selectedImage"
           ></textarea>
 
           <div class="model-selection">
-            <select v-model="selectedModel" class="model-select" :disabled="!selectedImage">
+            <select v-model="selectedModel" class="model-select">
               <option value="">选择模型</option>
               <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
             </select>
