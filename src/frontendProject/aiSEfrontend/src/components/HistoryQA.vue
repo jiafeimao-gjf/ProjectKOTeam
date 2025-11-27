@@ -1,46 +1,60 @@
 <template>
   <div class="history-qa-page">
     <h2>历史问答记录</h2>
-    
+
     <div v-if="loading" class="loading">
       正在加载历史记录...
     </div>
-    
+
     <div v-else-if="error" class="error">
       {{ error }}
     </div>
-    
+
     <div v-else class="history-content">
+      <div class="history-controls">
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="搜索日期 (例如: 2025-08-09 或 20250809)"
+          class="search-input"
+        />
+      </div>
+
       <div class="history-list">
         <div
-          v-for="[date, files] in Object.entries(historyList).sort((a, b) => {
-            const dateA = a[0].replace('history_', '');
-            const dateB = b[0].replace('history_', '');
-            return new Date(dateB) - new Date(dateA);
-          })"
+          v-for="[date, files] in filteredHistoryList"
           :key="date"
           class="date-group"
         >
-          <h3>{{ formatDate(date) }}</h3>
-          <ul>
-            <li
-              v-for="file in files"
-              :key="file"
-              @click="loadHistoryContent(getFullFileName(date, file))"
-              :class="{'active': selectedFile === getFullFileName(date, file)}"
-              class="history-item"
-            >
-              <span class="file-name">{{ extractFileName(file) }}</span>
-              <span class="timestamp">{{ extractTimestamp(file) }}</span>
-            </li>
-          </ul>
+          <div
+            class="date-header"
+            @click="toggleDateGroup(date)"
+          >
+            <h3>{{ formatDate(date) }}</h3>
+            <span class="toggle-icon">{{ isDateGroupExpanded(date) ? '−' : '+' }}</span>
+          </div>
+
+          <div v-show="isDateGroupExpanded(date)" class="date-content">
+            <ul>
+              <li
+                v-for="file in files"
+                :key="file"
+                @click="loadHistoryContent(getFullFileName(date, file))"
+                :class="{'active': selectedFile === getFullFileName(date, file)}"
+                class="history-item"
+              >
+                <span class="file-name">{{ extractFileName(file) }}</span>
+                <span class="timestamp">{{ extractTimestamp(file) }}</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
-      
+
       <div v-if="selectedHistoryContent" class="history-detail">
         <div class="content-area" v-html="renderedContent"></div>
       </div>
-      
+
       <div v-else class="placeholder">
         <p>请选择一个历史记录查看内容</p>
       </div>
@@ -61,6 +75,8 @@ const selectedFile = ref('');
 const selectedHistoryContent = ref('');
 const loading = ref(false);
 const error = ref('');
+const searchQuery = ref('');
+const expandedDates = ref(new Set());
 
 // 配置 marked 以支持代码高亮
 marked.setOptions({
@@ -81,13 +97,94 @@ const renderedContent = computed(() => {
   return DOMPurify.sanitize(rawContent);
 });
 
+// 过滤后的历史列表（根据搜索查询）
+const filteredHistoryList = computed(() => {
+  // First, sort the history list by date (newest first)
+  const sortedEntries = Object.entries(historyList.value).sort((a, b) => {
+    // Extract the date-time string from the key
+    let dateA = a[0];
+    let dateB = b[0];
+
+    // If it starts with 'history_', extract the date part
+    if (dateA.startsWith('history_')) {
+      dateA = dateA.replace('history_', '');
+    }
+    if (dateB.startsWith('history_')) {
+      dateB = dateB.replace('history_', '');
+    }
+
+    // If it's in the format YYYYMMDDHHMMSS (like 20250809230906), convert to proper date format
+    if (/^\d{14}$/.test(dateA)) {
+      const dateAFormatted = `${dateA.substring(0, 4)}-${dateA.substring(4, 6)}-${dateA.substring(6, 8)} ${dateA.substring(8, 10)}:${dateA.substring(10, 12)}:${dateA.substring(12, 14)}`;
+      dateA = dateAFormatted;
+    }
+
+    if (/^\d{14}$/.test(dateB)) {
+      const dateBFormatted = `${dateB.substring(0, 4)}-${dateB.substring(4, 6)}-${dateB.substring(6, 8)} ${dateB.substring(8, 10)}:${dateB.substring(10, 12)}:${dateB.substring(12, 14)}`;
+      dateB = dateBFormatted;
+    }
+
+    return new Date(dateB) - new Date(dateA);
+  });
+
+  // If no search query, return the sorted list
+  if (!searchQuery.value.trim()) {
+    return sortedEntries;
+  }
+
+  // Filter the entries based on the search query
+  const query = searchQuery.value.trim().toLowerCase();
+  return sortedEntries.filter(([date]) => {
+    // Check if the date contains the search query in any format
+    let dateForSearch = date;
+    if (date.startsWith('history_')) {
+      dateForSearch = date.substring(8); // Remove "history_" prefix
+    }
+
+    // Check various formats: YYYY-MM-DD, YYYYMMDD, MM/DD, etc.
+    return (
+      date.toLowerCase().includes(query) ||
+      dateForSearch.toLowerCase().includes(query) ||
+      dateForSearch.replace(/[-: ]/g, '').includes(query) || // Search in YYYYMMDDHHMMSS format
+      dateForSearch.substring(0, 10).replace(/[-: ]/g, '').includes(query) // Search in YYYYMMDD format
+    );
+  });
+});
+
+// 检查日期组是否展开
+const isDateGroupExpanded = (date) => {
+  return expandedDates.value.has(date);
+};
+
+// 切换日期组展开/折叠状态
+const toggleDateGroup = (date) => {
+  if (expandedDates.value.has(date)) {
+    expandedDates.value.delete(date);
+  } else {
+    expandedDates.value.add(date);
+  }
+};
+
 // 格式化日期显示
 const formatDate = (dateStr) => {
-  // 例如：将 "history_2025-08-09 22:53:28" 格式化为更友好的格式
+  // If it starts with 'history_', extract the date part
+  let datePart = dateStr;
   if (dateStr.startsWith('history_')) {
-    return dateStr.substring(8); // 移除 "history_" 前缀
+    datePart = dateStr.substring(8); // 移除 "history_" 前缀
   }
-  return dateStr;
+
+  // If it's in the format YYYYMMDDHHMMSS (like 20250809230906), convert to readable format
+  if (/^\d{14}$/.test(datePart)) {
+    const year = datePart.substring(0, 4);
+    const month = datePart.substring(4, 6);
+    const day = datePart.substring(6, 8);
+    const hour = datePart.substring(8, 10);
+    const minute = datePart.substring(10, 12);
+    const second = datePart.substring(12, 14);
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  }
+
+  return datePart;
 };
 
 // 提取文件名部分
@@ -218,6 +315,15 @@ onMounted(async () => {
   height: calc(100vh - 140px);
 }
 
+.search-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
 .history-list {
   width: 300px;
   background: #fff;
@@ -229,15 +335,38 @@ onMounted(async () => {
 }
 
 .date-group {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-.date-group h3 {
-  margin: 0 0 12px 0;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
-  font-size: 1.1em;
-  color: #444;
+.date-header {
+  padding: 10px 12px;
+  background: #f8f9fa;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #333;
+}
+
+.date-header:hover {
+  background: #e9ecef;
+}
+
+.toggle-icon {
+  font-size: 1.2em;
+  font-weight: bold;
+  width: 20px;
+  text-align: center;
+  display: inline-block;
+}
+
+.date-content {
+  padding: 10px;
+  background: #fff;
 }
 
 .date-group ul {
@@ -247,9 +376,9 @@ onMounted(async () => {
 }
 
 .history-item {
-  padding: 10px 12px;
+  padding: 8px 10px;
   margin: 5px 0;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
   border: 1px solid #e1e4e8;
