@@ -32,3 +32,6 @@ src/backendProject/llmService/__pycache__/__init__.cpython-313.pyc
 .gitignore
 src/backendProject/AISE/__pycache__/fsm_controller.cpython-313.pyc
 /src/search_and_answer/search_pages/
+
+
+/src/backendProject/llmService/images
