@@ -212,12 +212,12 @@ const fetchModelList = async () => {
 // 提交图片对话请求
 const submitImageChat = async () => {
   if (!canSubmit.value) return;
-  
+
   isSubmitting.value = true;
   error.value = '';
   response.value = '';
   isLoading.value = true;
-  
+
   try {
     const formData = new FormData();
     formData.append('image', selectedImage.value);
@@ -225,16 +225,23 @@ const submitImageChat = async () => {
     if (selectedModel.value) {
       formData.append('model', selectedModel.value);
     }
-    
+
+    // Create abort controller for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20 * 60 * 1000); // 20 minutes
+
     const response = await fetch('/api/image_chat', {
       method: 'POST',
       body: formData,
+      signal: controller.signal
     });
-    
+
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const result = await response.json();
     if (result.code === 0) {
       response.value = result.content;
@@ -243,7 +250,11 @@ const submitImageChat = async () => {
     }
   } catch (err) {
     console.error('提交图片对话请求失败:', err);
-    error.value = `提交请求失败: ${err.message}`;
+    if (err.name === 'AbortError') {
+      error.value = '请求超时: 图片分析已运行超过20分钟，请重试。';
+    } else {
+      error.value = `提交请求失败: ${err.message}`;
+    }
   } finally {
     isSubmitting.value = false;
     isLoading.value = false;
