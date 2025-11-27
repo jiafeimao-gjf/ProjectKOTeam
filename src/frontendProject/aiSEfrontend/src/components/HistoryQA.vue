@@ -12,15 +12,19 @@
     
     <div v-else class="history-content">
       <div class="history-list">
-        <div 
-          v-for="(files, date) in historyList" 
-          :key="date" 
+        <div
+          v-for="[date, files] in Object.entries(historyList).sort((a, b) => {
+            const dateA = a[0].replace('history_', '');
+            const dateB = b[0].replace('history_', '');
+            return new Date(dateB) - new Date(dateA);
+          })"
+          :key="date"
           class="date-group"
         >
           <h3>{{ formatDate(date) }}</h3>
           <ul>
-            <li 
-              v-for="file in files" 
+            <li
+              v-for="file in files"
               :key="file"
               @click="loadHistoryContent(getFullFileName(date, file))"
               :class="{'active': selectedFile === getFullFileName(date, file)}"
