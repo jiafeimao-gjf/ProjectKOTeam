@@ -69,7 +69,7 @@ def chat():
     current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     return Response(
-        ollama_stream(prompt, model, postfix),
+        ollama_stream(prompt, model, postfix, logger),
         mimetype="text/event-stream",  # SSE 必须用这个 MIME
         headers={
             "Cache-Control": "no-cache",

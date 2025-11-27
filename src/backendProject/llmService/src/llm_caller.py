@@ -11,11 +11,11 @@ import ollama
 # db = client['llm_chat_history']  # 数据库名称
 # chat_collection = db['chat_records']  # 集合名称
 
-def ollama_stream(prompt, target_model, subfix):
-    return ollama_stream_inner(prompt, target_model, subfix, need_save=True)
+def ollama_stream(prompt, target_model, subfix, logger=None):
+    return ollama_stream_inner(prompt, target_model, subfix, need_save=True, logger=logger)
 
 
-def ollama_stream_inner(prompt, target_model, subfix, need_save=False):
+def ollama_stream_inner(prompt, target_model, subfix, need_save=False, logger=None):
     """
     :param prompt: 输入的描述
     :param target_model: 输入模型
@@ -42,7 +42,8 @@ def ollama_stream_inner(prompt, target_model, subfix, need_save=False):
                 text = "\n" + text
 
         if text:
-            logger.info(text)
+            if logger:
+                logger.info(text)
             save_data["answer"] += text
             # SSE 数据格式必须是 "data: ...\n\n"
             # yield f'{text}'
@@ -62,7 +63,7 @@ def ollama_stream_inner(prompt, target_model, subfix, need_save=False):
     # chat_collection.insert_one(chat_record)
     # logger.info("数据已保存到MongoDB")
     # 保存到history 下面
-    save_to_his(need_save, save_data, subfix, None)
+    save_to_his(need_save, save_data, subfix, logger)
 
 
 def save_to_his(need_save, save_data, subfix, logger):
