@@ -13,12 +13,18 @@
     <div v-else class="history-content">
       <div class="history-list">
         <div class="search-container">
-          <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="搜索日期 (例如: 2025-08-09 或 20250809)"
-            class="search-input"
-          />
+          <div class="search-refresh-container">
+            <input
+              type="text"
+              v-model="searchQuery"
+              placeholder="搜索日期 (例如: 2025-08-09 或 20250809)"
+              class="search-input"
+            />
+            <button @click="refreshHistoryList" class="refresh-btn" :disabled="loading">
+              <span v-if="loading">刷新中...</span>
+              <span v-else>刷新</span>
+            </button>
+          </div>
         </div>
         <div
           v-for="[date, files] in filteredHistoryList"
@@ -214,7 +220,7 @@ const getFullFileName = (dateStr, fileName) => {
 const fetchHistoryList = async () => {
   loading.value = true;
   error.value = '';
-  
+
   try {
     const response = await fetch('/api/get_his_list');
     if (!response.ok) {
@@ -228,6 +234,13 @@ const fetchHistoryList = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// 刷新历史列表
+const refreshHistoryList = async () => {
+  await fetchHistoryList();
+  // Reset expanded dates to include all dates after refresh
+  expandedDates.value = new Set(Object.keys(historyList.value));
 };
 
 // 加载历史内容
@@ -522,5 +535,31 @@ onMounted(async () => {
 .placeholder p {
   font-size: 1.2em;
   color: #888;
+}
+
+.search-refresh-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.refresh-btn {
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.refresh-btn:disabled {
+  background: #e9ecef;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 </style>
