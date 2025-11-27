@@ -175,6 +175,20 @@ file_name: string, required - The name of the history file to retrieve
   "code": 0,
   "content": "string - The content of the history file"
 }
+
+### 10. Get Image
+**Endpoint:** `GET /images/<filename>`
+
+**Description:** Retrieves an uploaded image by filename. This endpoint is used to access images that were uploaded during image chat sessions, which are then embedded in markdown history files.
+
+**Path Parameters:**
+```
+filename: string, required - The name of the image file to retrieve from the images directory
+```
+
+**Response:**
+- Success: The image file with appropriate content type (image/jpeg, image/png, etc.)
+- Error: JSON error response if the image is not found (404) or could not be retrieved (500)
 ```
 
 ## Building and Running

@@ -163,6 +163,13 @@ def image_chat():
     image_bytes = image_file.read()
     image_b64 = base64.b64encode(image_bytes).decode()
 
+    # Save the original image file
+    image_extension = image_file.filename.split('.')[-1] if '.' in image_file.filename else 'jpg'
+    image_filename = f"{str(uuid.uuid4())}_{int(time.time())}.{image_extension}"
+    image_path = os.path.join("images", image_filename)
+    with open(image_path, 'wb') as f:
+        f.write(image_bytes)
+
     logger.info(f"Received image_b64: {image_b64[:10]}...")
 
     # 生成器：逐块返回模型输出
@@ -193,7 +200,8 @@ def image_chat():
             yield "data: [DONE]\n\n"
             global postfix
             logger.info(f"len(answer): {len(answer)}")
-            save_to_his(True, {"model": model, "prompt": prompt, "answer": answer}, postfix, logger)
+            # Include image path in the saved history
+            save_to_his(True, {"model": model, "prompt": prompt, "answer": answer, "image_path": image_path}, postfix, logger)
 
         except Exception as e:
             yield f"[ERROR] {str(e)}"
@@ -207,6 +215,46 @@ def image_chat():
             "X-Accel-Buffering": "no"  # 关闭 Nginx 等的缓冲
         }
     )
+
+
+# Image retrieval endpoint
+@app.route('/images/<filename>', methods=["GET"])
+def get_image(filename):
+    """
+    Retrieve an uploaded image by filename
+
+    Args:
+        filename (str): The name of the image file to retrieve
+
+    Returns:
+        The image file or error response
+    """
+    try:
+        image_path = os.path.join("images", filename)
+        if not os.path.exists(image_path):
+            return {"error": "Image not found"}, 404
+
+        # Determine content type based on file extension
+        extension = filename.split('.')[-1].lower()
+        content_types = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'bmp': 'image/bmp',
+            'webp': 'image/webp'
+        }
+        content_type = content_types.get(extension, 'application/octet-stream')
+
+        with open(image_path, 'rb') as f:
+            image_data = f.read()
+
+        response = Response(image_data, mimetype=content_type)
+        response.headers['Cache-Control'] = 'public, max-age=3600'  # Cache for 1 hour
+        return response
+    except Exception as e:
+        logger.error(f"Error retrieving image {filename}: {str(e)}")
+        return {"error": "Could not retrieve image"}, 500
 
 
 @app.route('/get_his_list', methods=["GET"])

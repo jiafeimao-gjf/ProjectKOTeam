@@ -76,6 +76,12 @@ def save_to_his(need_save, save_data, subfix, logger):
                 logger.info(f"save_data")
             f.write(f"# model: {save_data['model']}\n")
             f.write(f"# prompt: {save_data['prompt']}\n")
+
+            # If image_path exists, embed the image in the markdown
+            if 'image_path' in save_data and save_data['image_path']:
+                image_filename = save_data['image_path'].split('/')[-1]  # Extract filename from path
+                f.write(f"![Uploaded Image](../{save_data['image_path']})\n\n")
+
             f.write(f"# answer: \n {save_data['answer']}\n")
             if logger:
                 logger.info(f"save_data ok")
