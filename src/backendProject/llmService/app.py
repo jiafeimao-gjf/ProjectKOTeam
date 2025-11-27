@@ -251,9 +251,12 @@ def get_his_content():
         # 如果文件名参数缺失，返回错误信息和400状态码
         return {"error": "file_name is required"}, 400
 
+    file_name = "history_" + file_name
     # 使用with语句安全地打开和关闭文件，确保异常处理
     # 读取history目录下指定文件的全部内容，使用UTF-8编码
-    with open(f"./history/{file_name}", "r", encoding="utf-8") as f:
+    if not os.path.exists(f"history/{file_name}"):
+        return {"content": "file not found"}
+    with open(f"history/{file_name}", "r", encoding="utf-8") as f:
         content = f.read()
 
     # 返回成功响应，包含操作状态、状态码和文件内容
