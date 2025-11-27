@@ -25,3 +25,9 @@ response：
 	"content": "# prompt: **下一步：实现AI对战模式与数据分析可视化**\n\n**怎么做？**\n\n1. **集成AI引擎**：使用Minimax算法结合Alpha-Beta剪枝优化，开发本地AI玩家。通过设置不同难度等级（简单/中等/困难），让玩家可选择与AI对战。\n\n2. **构建数据统计面板**：创建React组件展示用户胜率图表、胜负分布、平均游戏时长等数据。使用ECharts或Chart.js实现动态可视化，支持按时间段筛选历史对局。\n\n3. **开发回放功能**：在MongoDB中存储每步棋的坐标和时间戳，通过Canvas动画方式实现历史对局自动播放，支持快进/暂停/重播控制。\n\n4. **优化用户体验**：\n   - 添加聊天室功能，玩家可实时交流\n   - 实现棋谱导出（JSON/PNG格式）\n   - 增加音效和提示音\n   - 设计响应式界面适配移动端\n\n5. **部署与测试**：使用Docker容器化部署，配置Nginx反向代理，确保WebSocket连接稳定。通过Jest进行单元测试，Cypress做端到端测试。\n\n6. **性能优化**：\n   - 实现棋盘状态缓存\n   - 优化数据库查询索引\n   - 添加加载动画和错误处理\n\n核心难点在于AI算法的平衡性调整和数据可视化组件的交互设计。[DONE]\n请用不超过100字浓缩总结上面的内容。\n# answer: \n 实现AI对战模式与数据分析可视化：集成Minimax算法AI玩家，开发数据统计面板和回放功能，优化用户体验，部署测试并进行性能优化。\n",
 	"msg": "success"
 }
+
+curl --request POST \
+  --url http://127.0.0.1:5888/image_chat \
+  --header 'Content-Type: multipart/form-data' \
+  --form 'prompt=请描述一下图片, 最后一行用10个字以内的总结这个图片' \
+  --form 'image=@/Users/jiafei/Desktop/视频创作/20250917-104123.jpg'

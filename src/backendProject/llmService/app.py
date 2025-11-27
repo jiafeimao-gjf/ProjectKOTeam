@@ -9,7 +9,7 @@ from flask import Flask, Response, request
 import ollama
 
 from log.log_utils import logger
-from src.llm_caller import ollama_stream, ollama_stream_inner
+from src.llm_caller import ollama_stream, ollama_stream_inner, save_to_his
 
 app = Flask(__name__)
 
@@ -193,8 +193,9 @@ def image_chat():
             if not file_name:
                 file_name = answer.split("\n")[-2]
 
-            with open(f"{model}_{file_name}_{time.time()}.md", "w", encoding="utf-8") as f:
-                f.write(answer)
+            global postfix
+            save_to_his(True, {"model": model, "prompt": prompt, "answer": answer}, postfix)
+
         except Exception as e:
             yield f"[ERROR] {str(e)}"
 
