@@ -10,17 +10,22 @@
       </div>
       
       <div v-for="(qa, index) in QAHistory" :key="index" class="qa-item">
-        <div class="question-section">
-          <div class="user-avatar">👤</div>
-          <div class="qa-question">
-            <div class="meta">{{ qa.question }}</div>
+        <!-- 用户问题 -->
+        <div class="message-item user">
+          <div class="meta">
+            <strong>👤 你</strong>
+            <button class="copy-btn" @click="copyMessage(qa.question)" title="复制问题">复制</button>
           </div>
+          <div class="bubble user-bubble">{{ qa.question }}</div>
         </div>
         
-        <div class="answer-section">
-          <div class="ai-avatar">🤖</div>
-          <div class="bubble">
-            <div class="meta">模型: {{ qa.model }}</div>
+        <!-- AI回答 -->
+        <div class="message-item ai">
+          <div class="meta">
+            <strong>🤖 {{ qa.model }}</strong>
+            <button class="copy-btn" @click="copyMessage(qa.answer)" title="复制回答">复制</button>
+          </div>
+          <div class="bubble ai-bubble">
             <div v-if="loading && index === QAHistory.length - 1" class="loading-dots">
               <span></span>
               <span></span>
@@ -37,37 +42,43 @@
       </div>
     </div>
     
-    <div class="input-container">
-      <div class="system-prompt-area">
-        <div class="input-header">
-          <span class="input-label">🎯 系统提示词 (可选)</span>
+    <!-- 底部固定输入区域 -->
+    <div class="bottom-bar">
+      <div class="bar-row">
+        <div class="input-area">
+          <label>🎯 系统提示词 (可选)</label>
+          <textarea 
+            v-if="showSystemPrompt"
+            v-model="systemPrompt" 
+            placeholder="为AI提供背景信息和约束条件..." 
+            class="question-input system-prompt"
+          ></textarea>
           <button 
             @click="toggleSystemPrompt" 
             class="toggle-btn"
             :class="{ active: showSystemPrompt }"
           >
-            {{ showSystemPrompt ? '收起' : '展开' }}
+            {{ showSystemPrompt ? '收起提示词' : '展开提示词' }}
           </button>
         </div>
-        <textarea 
-          v-show="showSystemPrompt"
-          v-model="systemPrompt" 
-          placeholder="为AI提供背景信息和约束条件..." 
-          class="question-input system-prompt"
-        ></textarea>
       </div>
       
-      <div class="input-area">
-        <textarea 
-          v-model="question" 
-          placeholder="请输入你的问题..." 
-          class="question-input"
-          @keydown.enter.exact.prevent="askQuestion"
-          @keydown.enter.shift.exact="handleShiftEnter"
-          ref="questionTextarea"
-        ></textarea>
-        
-        <div class="controls">
+      <div class="bar-row">
+        <div class="input-area">
+          <label>💬 请输入你的问题</label>
+          <textarea 
+            v-model="question" 
+            placeholder="请输入你的问题..." 
+            class="question-input main-input"
+            @keydown.enter.exact.prevent="askQuestion"
+            @keydown.enter.shift.exact="handleShiftEnter"
+            ref="questionTextarea"
+          ></textarea>
+        </div>
+      </div>
+      
+      <div class="bar-row">
+        <div class="input-area">
           <select v-model="selectedModel" class="model-select">
             <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
           </select>
@@ -153,6 +164,21 @@ function handleShiftEnter(event) {
   nextTick(() => {
     adjustTextareaHeight()
   })
+}
+
+// 复制消息功能
+function copyMessage(text) {
+  try {
+    navigator.clipboard.writeText(text)
+    // 显示复制成功提示
+    const toast = document.createElement('div')
+    toast.className = 'copy-toast'
+    toast.textContent = '✓ 已复制到剪贴板'
+    document.body.appendChild(toast)
+    setTimeout(() => toast.remove(), 2000)
+  } catch (err) {
+    console.error('复制失败:', err)
+  }
 }
 
 // 获取最后答案
@@ -362,16 +388,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 页面整体样式，现代化设计 */
+/* 页面整体样式，参考QnAv2设计 */
 .qna-page {
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   box-sizing: border-box;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  align-items: center;
+  background: var(--bg-secondary);
   position: relative;
   border: 1px solid var(--border-light);
 }
@@ -397,6 +424,10 @@ h2 {
   text-align: center;
   position: relative;
   padding-bottom: var(--spacing);
+  background: var(--bg-primary);
+  width: 100%;
+  padding-top: var(--spacing-xl);
+  border-bottom: 2px solid var(--border-medium);
 }
 
 h2::after {
@@ -599,15 +630,22 @@ h2::after {
   flex: 2;
   padding: var(--spacing);
   font-size: var(--font-size);
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius);
   border: 2px solid var(--border-medium);
   background: var(--bg-primary);
   resize: vertical;
   min-height: 50px;
-  max-height: 200px;
+  max-height: 120px;
   font-family: inherit;
   transition: all var(--transition);
   box-shadow: var(--shadow-sm);
+}
+
+.main-input {
+  flex: 3;
+  min-height: 60px;
+  max-height: 150px;
+  font-size: var(--font-size-lg);
 }
 
 .question-input:focus {
@@ -772,87 +810,54 @@ h2::after {
   font-weight: 600;
 }
 
-/* 输入容器样式 */
-.input-container {
-  width: 90%;
-  max-width: 1000px;
-  margin: 0 auto var(--spacing-xl);
-  position: relative;
-  z-index: 2;
-  border: 1px solid var(--border-light);
-  border-radius: var(--border-radius-lg);
-  background: var(--bg-primary);
-  box-shadow: var(--shadow);
-}
-
-/* 系统提示词区域 */
-.system-prompt-area {
-  margin-bottom: var(--spacing);
-  background: var(--bg-primary);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  transition: all var(--transition);
-  border: 1px solid var(--border-light);
-  border-bottom: 2px solid var(--border-medium);
-}
-
-.input-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* 底部固定容器，参考QnAv2设计 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 240px; /* 导航栏宽度 */
+  right: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
   padding: var(--spacing) var(--spacing-lg);
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-medium);
+  border-top: 2px solid var(--border-medium);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
-.input-label {
+.bottom-bar .bar-row {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing);
+}
+
+.bar-row .input-area {
+  width: 100%;
+  display: flex;
+  gap: var(--spacing);
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.bar-row .input-area label {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--text-secondary);
-}
-
-.toggle-btn {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.toggle-btn:hover,
-.toggle-btn.active {
-  background: var(--primary-color);
-  color: var(--text-white);
-  border-color: var(--primary-color);
-}
-
-.system-prompt {
-  background: var(--bg-primary);
-  font-style: italic;
-  font-size: var(--font-size-sm);
-}
-
-/* 输入区域样式 */
-.input-area {
+  white-space: nowrap;
+  min-width: 120px;
   display: flex;
-  gap: var(--spacing);
-  align-items: flex-end;
-  background: var(--bg-primary);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-lg);
-  transition: all var(--transition);
-  border: 1px solid var(--border-light);
-  border-top: 2px solid var(--border-medium);
-}
-
-.input-area:focus-within {
-  box-shadow: var(--shadow-xl), 0 0 0 2px var(--primary-color);
-  border-color: var(--border-focus);
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .controls {
