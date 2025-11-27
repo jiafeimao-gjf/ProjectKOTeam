@@ -211,12 +211,53 @@ def image_chat():
 
 @app.route('/get_his_list', methods=["GET"])
 def get_his_list():
+    """
+    获取历史记录文件列表
+    
+    该函数遍历history目录下的所有子目录，收集每个子目录中的文件列表
+    
+    Returns:
+        dict: 以子目录名为键，文件列表为值的字典
+    """
     his_list = {}
-    for root, dirs, files in os.walk("./chat_history"):
-        if len(files):
+    # 遍历history目录及其所有子目录，收集非空目录中的文件
+    for root, dirs, files in os.walk("./history"):
+        if len(files) > 0:
             his_list[root.split("/")[-1]] = files
 
     return his_list
+
+
+# 获取某一个日志文件的内容
+@app.route('/get_his_content', methods=["GET"])  # 定义API路由，仅接受GET请求
+def get_his_content():
+    """
+    获取指定历史日志文件的内容
+    
+    通过文件名参数读取history目录下对应文件的内容
+    
+    Args:
+        file_name (str): Query参数，必需。指定要读取的历史日志文件名，位于history目录下
+    
+    Returns:
+        dict: 包含操作结果、状态码和文件内容的字典
+        int: HTTP状态码(成功时200，参数缺失时400)
+    """
+    # 从请求参数中获取文件名
+    file_name = request.args.get("file_name")
+
+    # 检查必需的文件名参数是否存在
+    if not file_name:
+        # 如果文件名参数缺失，返回错误信息和400状态码
+        return {"error": "file_name is required"}, 400
+
+    # 使用with语句安全地打开和关闭文件，确保异常处理
+    # 读取history目录下指定文件的全部内容，使用UTF-8编码
+    with open(f"./history/{file_name}", "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # 返回成功响应，包含操作状态、状态码和文件内容
+    return {"msg": "success", "code": 0, "content": content}
 
 
 if __name__ == "__main__":
