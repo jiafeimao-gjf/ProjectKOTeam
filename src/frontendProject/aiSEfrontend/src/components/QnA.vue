@@ -1,14 +1,14 @@
 <template>
   <div class="qna-page">
-    <h2>🤖 本地AI助手</h2>
-    
+    <h1>🤖 本地AI助手</h1>
+
     <div class="answer" ref="answerContainer">
       <div v-if="QAHistory.length === 0 && !loading" class="empty-state">
         <div class="empty-icon">💬</div>
         <h3>开始你的对话</h3>
         <p>向AI助手提问，获得智能回答和建议</p>
       </div>
-      
+
       <div v-for="(qa, index) in QAHistory" :key="index" class="qa-item">
         <!-- 用户问题 -->
         <div class="message-item user">
@@ -18,7 +18,7 @@
           </div>
           <div class="bubble user-bubble">{{ qa.question }}</div>
         </div>
-        
+
         <!-- AI回答 -->
         <div class="message-item ai">
           <div class="meta">
@@ -41,53 +41,36 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 底部固定输入区域 -->
     <div class="bottom-bar">
       <div class="bar-row">
         <div class="input-area">
           <label>🎯 系统提示词 (可选)</label>
-          <textarea 
-            v-if="showSystemPrompt"
-            v-model="systemPrompt" 
-            placeholder="为AI提供背景信息和约束条件..." 
-            class="question-input system-prompt"
-          ></textarea>
-          <button 
-            @click="toggleSystemPrompt" 
-            class="toggle-btn"
-            :class="{ active: showSystemPrompt }"
-          >
+          <textarea v-if="showSystemPrompt" v-model="systemPrompt" placeholder="为AI提供背景信息和约束条件..."
+            class="question-input system-prompt"></textarea>
+          <button @click="toggleSystemPrompt" class="toggle-btn" :class="{ active: showSystemPrompt }">
             {{ showSystemPrompt ? '收起提示词' : '展开提示词' }}
           </button>
         </div>
       </div>
-      
+
       <div class="bar-row">
         <div class="input-area">
           <label>💬 请输入你的问题</label>
-          <textarea 
-            v-model="question" 
-            placeholder="请输入你的问题..." 
-            class="question-input main-input"
-            @keydown.enter.exact.prevent="askQuestion"
-            @keydown.enter.shift.exact="handleShiftEnter"
-            ref="questionTextarea"
-          ></textarea>
+          <textarea v-model="question" placeholder="请输入你的问题..." class="question-input main-input"
+            @keydown.enter.exact.prevent="askQuestion" @keydown.enter.shift.exact="handleShiftEnter"
+            ref="questionTextarea"></textarea>
         </div>
       </div>
-      
+
       <div class="bar-row">
         <div class="input-area">
           <select v-model="selectedModel" class="model-select">
             <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
           </select>
-          
-          <button 
-            @click="askQuestion" 
-            :disabled="loading || !question.trim()" 
-            class="submit-btn"
-          >
+
+          <button @click="askQuestion" :disabled="loading || !question.trim()" class="submit-btn">
             <span v-if="loading" class="loading-spinner"></span>
             {{ loading ? '思考中...' : '发送' }}
           </button>
@@ -194,12 +177,12 @@ function getLastAnswer() {
 function getRenderedAnswer(index) {
   const qaTemp = QAHistory.value[index]
   if (!qaTemp || !qaTemp.answer) return ''
-  
+
   // 对于当前正在流式回答的索引，直接返回原始文本以支持逐字显示
   if (index === currentAnswerIndex.value && isStreaming.value) {
     return qaTemp.answer
   }
-  
+
   // 对于其他已完成的回答，返回格式化HTML
   const rawHtml = marked.parse(qaTemp.answer)
   const cleanHtml = DOMPurify.sanitize(rawHtml)
@@ -234,7 +217,7 @@ function highlightCodeBlocks() {
 watch(QAHistory, async () => {
   await nextTick()
   scrollToBottom()
-  
+
   // 只在非流式状态下进行代码高亮
   if (!isStreaming.value) {
     highlightCodeBlocks()
@@ -253,11 +236,18 @@ async function askQuestion() {
     return
   }
 
+  function getSystemPrompt() {
+    if (showSystemPrompt.value && systemPrompt.value.trim()) {
+      return "<system>" + systemPrompt.value.trim() + "</system>\n"
+    }
+    return ''
+  }
+
   loading.value = true
   isStreaming.value = true // 开始流式渲染
 
   const qa = {
-    question: systemPrompt.value + "\n" + question.value,
+    question: getSystemPrompt() + "<question>" + question.value + "</question>",
     model: selectedModel.value,
     answer: ''
   }
@@ -288,31 +278,31 @@ async function askQuestion() {
     if (!response.ok) throw new Error('接口请求失败')
 
     const streamUrl = await response.text()
-    
+
     eventSource = new EventSource(streamUrl)
-    
+
     eventSource.onmessage = (event) => {
       if (event.data === '[DONE]') {
         loading.value = false
         isStreaming.value = false // 结束流式渲染
         eventSource.close()
-        
+
         // 渲染最终的格式化内容
         nextTick(() => {
           highlightCodeBlocks()
         })
-        
+
         console.log('流式响应完成')
         return
       }
-      
+
       try {
         const data = JSON.parse(event.data)
         if (data.text) {
           // 逐字追加文本
           QAHistory.value[currentAnswerIndex.value].answer += data.text
           console.log('接收到文本:', data.text.substring(0, 20) + '...')
-          
+
           // 自动滚动到底部
           nextTick(() => {
             scrollToBottom()
@@ -321,14 +311,14 @@ async function askQuestion() {
       } catch (e) {
         QAHistory.value[currentAnswerIndex.value].answer += event.data
         console.log('接收到原始数据:', event.data.substring(0, 20) + '...')
-        
+
         // 自动滚动到底部
         nextTick(() => {
           scrollToBottom()
         })
       }
     }
-    
+
     eventSource.onerror = () => {
       loading.value = false
       isStreaming.value = false
@@ -336,14 +326,14 @@ async function askQuestion() {
       QAHistory.value[currentAnswerIndex.value].answer = '连接中断，请重试。'
       console.error('SSE连接错误')
     }
-    
+
     eventSource.addEventListener('end', () => {
       loading.value = false
       isStreaming.value = false
       eventSource.close()
       console.log('SSE流结束')
     })
-    
+
   } catch (error) {
     loading.value = false
     isStreaming.value = false
@@ -367,7 +357,7 @@ onMounted(async () => {
       'gemma2:2b',
       'gemma3:27b'
     ]
-    
+
     if (modelList.value.length > 0) {
       selectedModel.value = modelList.value[0]
     }
@@ -410,7 +400,7 @@ onMounted(async () => {
   right: 0;
   bottom: 0;
   background: radial-gradient(circle at 20% 80%, rgba(79, 140, 255, 0.05) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(79, 140, 255, 0.05) 0%, transparent 50%);
+    radial-gradient(circle at 80% 20%, rgba(79, 140, 255, 0.05) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -451,7 +441,8 @@ h2::after {
   margin: 0 auto var(--spacing-xl);
   font-size: var(--font-size);
   min-height: 300px;
-  height: calc(100vh - 250px); /* Fixed height to enable proper scrolling, accounting for input area */
+  max-height: 80vh;
+  /* Fixed height to enable proper scrolling, accounting for input area */
   background: rgba(255, 255, 255, 0.8);
   border-radius: var(--border-radius-lg);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -462,7 +453,8 @@ h2::after {
   z-index: 1;
   border: 1px solid rgba(148, 163, 184, 0.2);
   backdrop-filter: blur(10px);
-  margin-bottom: 20px; /* Ensure space for fixed input area */
+  margin-bottom: 20px;
+  /* Ensure space for fixed input area */
 }
 
 .answer::-webkit-scrollbar {
@@ -491,15 +483,24 @@ h2::after {
   animation: fadeInUp 0.3s ease-out forwards;
 }
 
-.qa-item:nth-child(1) { animation-delay: 0.05s; }
-.qa-item:nth-child(2) { animation-delay: 0.1s; }
-.qa-item:nth-child(3) { animation-delay: 0.15s; }
+.qa-item:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.qa-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.qa-item:nth-child(3) {
+  animation-delay: 0.15s;
+}
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -513,7 +514,8 @@ h2::after {
   flex-direction: column;
   gap: var(--spacing-xs);
   width: 100%;
-  align-self: stretch; /* Ensure full width allocation */
+  align-self: stretch;
+  /* Ensure full width allocation */
 }
 
 .message-item.user {
@@ -562,7 +564,8 @@ h2::after {
   line-height: 1.6;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.2s ease-out;
-  min-width: 200px; /* Ensure minimum width for readability */
+  min-width: 200px;
+  /* Ensure minimum width for readability */
   width: 100%;
   box-sizing: border-box;
 }
@@ -573,7 +576,8 @@ h2::after {
   color: #1e40af;
   border-bottom-right-radius: var(--border-radius-sm);
   align-self: flex-start;
-  max-width: 85%; /* Limit width to prevent overlapping */
+  max-width: 85%;
+  /* Limit width to prevent overlapping */
 }
 
 .ai-bubble {
@@ -582,7 +586,8 @@ h2::after {
   color: #334155;
   border-bottom-left-radius: var(--border-radius-sm);
   align-self: flex-end;
-  max-width: 85%; /* Limit width to prevent overlapping */
+  max-width: 85%;
+  /* Limit width to prevent overlapping */
 }
 
 /* Answer content styling to fix markdown rendering */
@@ -593,8 +598,13 @@ h2::after {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0.7; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* 加载状态样式 */
@@ -729,8 +739,13 @@ h2::after {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Markdown内容样式优化 - Enhanced for better rendering */
@@ -783,9 +798,17 @@ h2::after {
   line-height: 1.4;
 }
 
-.answer :deep(.answer-content h1) { font-size: var(--font-size-xl); }
-.answer :deep(.answer-content h2) { font-size: var(--font-size-lg); }
-.answer :deep(.answer-content h3) { font-size: var(--font-size-base); }
+.answer :deep(.answer-content h1) {
+  font-size: var(--font-size-xl);
+}
+
+.answer :deep(.answer-content h2) {
+  font-size: var(--font-size-lg);
+}
+
+.answer :deep(.answer-content h3) {
+  font-size: var(--font-size-base);
+}
 
 .answer :deep(.answer-content ul),
 .answer :deep(.answer-content ol) {
@@ -843,14 +866,14 @@ h2::after {
   border-top: 1px solid #e2e8f0;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
   z-index: 100;
-  display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  min-height: 120px; /* Set minimum height for the input area */
+  min-height: 120px;
+  /* Set minimum height for the input area */
 }
 
 .bottom-bar .bar-row {
-  width: 100%;
+  width: 80%;
   max-width: 900px;
   margin: 0 auto;
   display: flex;
@@ -861,7 +884,7 @@ h2::after {
 
 /* 系统提示切换按钮 */
 .toggle-btn {
-  background: #f1f5f9;
+  background: #b0bdca;
   border: 1px solid #cbd5e1;
   border-radius: var(--border-radius);
   padding: var(--spacing-sm) var(--spacing);
@@ -898,8 +921,16 @@ h2::after {
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* 流式内容过渡动画 */
@@ -908,9 +939,15 @@ h2::after {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0.7; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
+
 .loading-dots {
   display: flex;
   gap: 4px;
@@ -926,15 +963,27 @@ h2::after {
   animation: dotPulse 1.4s ease-in-out infinite;
 }
 
-.loading-dots span:nth-child(1) { animation-delay: 0s; }
-.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
-.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+.loading-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes dotPulse {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0.8);
     opacity: 0.5;
   }
+
   40% {
     transform: scale(1);
     opacity: 1;
