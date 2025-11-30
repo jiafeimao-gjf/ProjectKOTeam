@@ -47,11 +47,8 @@
       <div class="bar-row">
         <div class="input-area">
           <label>🎯 系统提示词 (可选)</label>
-          <textarea v-if="showSystemPrompt" v-model="systemPrompt" placeholder="为AI提供背景信息和约束条件..."
+          <textarea v-model="systemPrompt" placeholder="为AI提供背景信息和约束条件..."
             class="question-input system-prompt"></textarea>
-          <button @click="toggleSystemPrompt" class="toggle-btn" :class="{ active: showSystemPrompt }">
-            {{ showSystemPrompt ? '收起提示词' : '展开提示词' }}
-          </button>
         </div>
       </div>
 
@@ -82,7 +79,7 @@
 
 <script setup>
 // Vue 响应式 API
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 // markdown 解析库
 import { marked } from 'marked'
 // 代码高亮库
@@ -101,7 +98,6 @@ const modelList = ref([])
 const QAHistory = ref([])
 const questionTextarea = ref(null)
 const answerContainer = ref(null)
-const showSystemPrompt = ref(false)
 const isStreaming = ref(false) // 新增：流式渲染状态
 const currentAnswerIndex = ref(-1) // 新增：当前正在流式回答的索引
 
@@ -136,10 +132,6 @@ watch(question, () => {
   })
 })
 
-// 切换系统提示词显示
-function toggleSystemPrompt() {
-  showSystemPrompt.value = !showSystemPrompt.value
-}
 
 // 处理Shift+Enter换行
 function handleShiftEnter(event) {
@@ -237,7 +229,7 @@ async function askQuestion() {
   }
 
   function getSystemPrompt() {
-    if (showSystemPrompt.value && systemPrompt.value.trim()) {
+    if (systemPrompt.value && systemPrompt.value.trim()) {
       return "<system>" + systemPrompt.value.trim() + "</system>\n"
     }
     return ''
@@ -375,6 +367,25 @@ onMounted(async () => {
     selectedModel.value = modelList.value[0]
   }
 })
+
+// 确保 CSS 变量 --bottom-bar-height 与实际底部栏高度一致，避免 overlap
+function updateBottomBarHeight() {
+  const bar = document.querySelector('.bottom-bar')
+  if (bar) {
+    const h = bar.offsetHeight
+    // 设置在根上，以让 scoped CSS 获取到该变量
+    document.documentElement.style.setProperty('--bottom-bar-height', `${h}px`)
+  }
+}
+
+onMounted(() => {
+  updateBottomBarHeight()
+  window.addEventListener('resize', updateBottomBarHeight)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateBottomBarHeight)
+})
 </script>
 
 <style scoped>
@@ -418,7 +429,6 @@ h2 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-fill-color: transparent;
 }
 
 h2::after {
@@ -441,12 +451,16 @@ h2::after {
   margin: 0 auto var(--spacing-xl);
   font-size: var(--font-size);
   min-height: 300px;
-  max-height: 80vh;
+  /* reserve bottom space so fixed input area doesn't overlap content */
+  --bottom-bar-height: 140px;
+  max-height: calc(85vh - var(--bottom-bar-height));
   /* Fixed height to enable proper scrolling, accounting for input area */
   background: rgba(255, 255, 255, 0.8);
   border-radius: var(--border-radius-lg);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   padding: var(--spacing-lg);
+  /* extra bottom padding to keep messages above the fixed bottom-bar */
+  padding-bottom: calc(var(--spacing-lg) + var(--bottom-bar-height));
   box-sizing: border-box;
   overflow-y: auto;
   position: relative;
@@ -868,7 +882,8 @@ h2::after {
   z-index: 100;
   flex-direction: column;
   gap: var(--spacing-sm);
-  min-height: 120px;
+  --bottom-bar-height: 120px;
+  min-height: var(--bottom-bar-height);
   /* Set minimum height for the input area */
 }
 
@@ -1057,6 +1072,7 @@ h2::after {
 @media (max-width: 480px) {
   .bottom-bar {
     padding: var(--spacing-sm) var(--spacing);
+    --bottom-bar-height: 180px;
   }
 
   .answer {
