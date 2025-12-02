@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import QnAPage from './pages/QnAPage.vue'
 import QnAv2 from './components/QnAv2.vue'
+import QANew from './components/QANew.vue'
 import ProjectEngine from './components/ProjectEngine.vue'
 import CustomProjectEngine from './components/CustomProjectEngine.vue'
 import SoftwareProjectEngine from './components/SoftwareProjectEngine.vue'
@@ -19,6 +20,8 @@ const mode = ref('qna') // 默认问答模式
         <div class="mode-group">
           <div class="mode-group-title">对话模式</div>
           <button :class="{ active: mode === 'qna' }" @click="mode = 'qna'">💬 问答模式</button>
+          <button :class="{ active: mode === 'qaNew' }" @click="mode = 'qaNew'">💬 问答模式-新UI</button>
+
           <button :class="{ active: mode === 'qnav2' }" @click="mode = 'qnav2'">🚀 问答模式v2</button>
           <button :class="{ active: mode === 'history' }" @click="mode = 'history'">📚 历史问答</button>
         </div>
@@ -40,6 +43,7 @@ const mode = ref('qna') // 默认问答模式
 
       <div class="content-area">
         <QnAPage v-if="mode === 'qna'" class="fade-in" />
+        <QANew v-if="mode === 'qaNew'" class="fade-in" />
         <QnAv2 v-if="mode === 'qnav2'" class="fade-in" />
         <ProjectEngine v-if="mode === 'project'" class="fade-in" />
         <CustomProjectEngine v-if="mode === 'customproject'" class="fade-in" />
@@ -174,6 +178,8 @@ const mode = ref('qna') // 默认问答模式
   letter-spacing: 0.5px;
   margin-bottom: var(--spacing-sm);
   font-weight: 600;
+  padding-bottom: 10px;
+  padding-top: 10px;
 }
 
 .content-area {
