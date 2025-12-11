@@ -1,0 +1,1185 @@
+<template>
+  <div class="codegen-page">
+    <h1>🤖 代码生成助手</h1>
+
+    <div class="answer" ref="answerContainer">
+      <div v-if="QAHistory.length === 0 && !loading" class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>开始代码生成对话</h3>
+        <p>向AI助手提供系统提示和用户需求，获得代码生成结果</p>
+      </div>
+
+      <div v-for="(qa, index) in QAHistory" :key="index" class="qa-item">
+        <!-- 用户问题 -->
+        <div class="message-item user">
+          <div class="meta">
+            <strong>👤 你</strong>
+            <button class="copy-btn" @click="copyMessage(qa.question)" title="复制问题">复制</button>
+          </div>
+          <div class="bubble user-bubble">{{ qa.question }}</div>
+        </div>
+
+        <!-- AI回答 -->
+        <div class="message-item ai">
+          <div class="meta">
+            <strong>🤖 {{ qa.model }}</strong>
+            <div class="button-group">
+              <button class="copy-btn" @click="copyMessage(qa.answer)" title="复制回答">复制</button>
+              <button class="parse-btn" @click="parseGeneratedContent(qa.answer)" title="解析生成的代码">解析</button>
+            </div>
+          </div>
+          <div class="bubble ai-bubble">
+            <div v-if="loading && index === QAHistory.length - 1" class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <!-- 流式渲染时显示原始文本，完成后显示格式化HTML -->
+            <div v-if="index === currentAnswerIndex && isStreaming" class="streaming-text">
+              {{ qa.answer }}
+              <span class="typing-cursor" v-if="loading">|</span>
+            </div>
+            <div v-else v-html="getRenderedAnswer(index)" class="answer-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部固定输入区域 -->
+    <div class="bottom-bar">
+      <div class="bar-row">
+        <div class="input-area">
+          <label>🎯 系统提示词 (可选)</label>
+          <textarea v-model="systemPrompt" placeholder="为AI提供背景信息和约束条件..."
+                    class="question-input system-prompt"></textarea>
+        </div>
+      </div>
+
+      <div class="bar-row">
+        <div class="input-area">
+          <label>💬 请输入你的需求</label>
+          <textarea v-model="question" placeholder="描述你想要生成的代码功能..." class="question-input main-input"
+                    @keydown.enter.exact.prevent="askQuestion" @keydown.enter.shift.exact="handleShiftEnter"
+                    ref="questionTextarea"></textarea>
+        </div>
+      </div>
+
+      <div class="bar-row">
+        <div class="input-area">
+          <select v-model="selectedModel" class="model-select">
+            <option v-for="model in modelList" :key="model" :value="model">{{ model }}</option>
+          </select>
+
+          <button @click="askQuestion" :disabled="loading || !question.trim()" class="submit-btn">
+            <span v-if="loading" class="loading-spinner"></span>
+            {{ loading ? '生成中...' : '发送' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+// Vue 响应式 API
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+// markdown 解析库
+import { marked } from 'marked'
+// 代码高亮库
+import hljs from 'highlight.js'
+// 代码高亮样式
+import 'highlight.js/styles/github.css'
+// XSS保护
+import DOMPurify from 'dompurify'
+
+// 响应式状态
+const question = ref('')
+const systemPrompt = ref('你是一名 AI 编程助手。请根据以下需求完成代码变更，并将所有需要执行的 Git 操作以“代码输出协议（COP）”格式返回。  \n\
+1. 使用 BEGIN COP … END COP 包裹指令块。  \n\
+2. 每条操作以 ACTION: 开头，后面跟随动作名：CREATE_FILE, UPDATE_FILE, DELETE_FILE, COMMIT, PULL, CREATE_BRANCH, PUSH。  \n\
+3. 在 PARAMS: 行后写 JSON（或 YAML）对象，描述参数。 \n \
+4. 对于 CREATE_FILE/UPDATE_FILE，使用 CONTENT: 开始后写文件内容，以 END_CONTENT 结束。 \n \
+5. 所有字段使用英文，严格遵守语法；不要在 COP 外部写任何解释文字。 \n \
+6. 若需要多条操作，按顺序依次写；脚本会一次性执行。  ')
+const loading = ref(false)
+const selectedModel = ref('')
+const modelList = ref([])
+const QAHistory = ref([])
+const questionTextarea = ref(null)
+const answerContainer = ref(null)
+const isStreaming = ref(false) // 新增：流式渲染状态
+const currentAnswerIndex = ref(-1) // 新增：当前正在流式回答的索引
+
+// SSE 事件源对象
+let eventSource = null
+
+// 配置 marked 支持代码高亮
+marked.setOptions({
+  highlight: function (code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value
+    }
+    return hljs.highlightAuto(code).value
+  },
+  breaks: true,
+  gfm: true
+})
+
+// 自动调整文本域高度
+function adjustTextareaHeight() {
+  const textarea = questionTextarea.value
+  if (textarea) {
+    textarea.style.height = 'auto'
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
+  }
+}
+
+// 监听问题输入变化，自动调整文本域高度
+watch(question, () => {
+  nextTick(() => {
+    adjustTextareaHeight()
+  })
+})
+
+// 处理Shift+Enter换行
+function handleShiftEnter(event) {
+  // 允许默认换行行为
+  nextTick(() => {
+    adjustTextareaHeight()
+  })
+}
+
+// 复制消息功能
+function copyMessage(text) {
+  try {
+    navigator.clipboard.writeText(text)
+    // 显示复制成功提示
+    const toast = document.createElement('div')
+    toast.className = 'copy-toast'
+    toast.textContent = '✓ 已复制到剪贴板'
+    document.body.appendChild(toast)
+    setTimeout(() => toast.remove(), 2000)
+  } catch (err) {
+    console.error('复制失败:', err)
+  }
+}
+
+// 获取最后答案
+function getLastAnswer() {
+  if (QAHistory.value && QAHistory.value.length === 0) {
+    return ''
+  }
+  const qaTemp = QAHistory.value[QAHistory.value.length - 1]
+  return qaTemp.answer
+}
+
+// 获取渲染答案
+function getRenderedAnswer(index) {
+  const qaTemp = QAHistory.value[index]
+  if (!qaTemp || !qaTemp.answer) return ''
+
+  // 对于当前正在流式回答的索引，直接返回原始文本以支持逐字显示
+  if (index === currentAnswerIndex.value && isStreaming.value) {
+    return qaTemp.answer
+  }
+
+  // 对于其他已完成的回答，返回格式化HTML
+  const rawHtml = marked.parse(qaTemp.answer)
+  const cleanHtml = DOMPurify.sanitize(rawHtml)
+  return cleanHtml
+}
+
+// 自动滚动到底部
+function scrollToBottom() {
+  nextTick(() => {
+    if (answerContainer.value) {
+      answerContainer.value.scrollTop = answerContainer.value.scrollHeight
+    }
+  })
+}
+
+// 代码高亮函数
+function highlightCodeBlocks() {
+  if (answerContainer.value) {
+    try {
+      answerContainer.value.querySelectorAll('pre code').forEach(block => {
+        if (block.textContent.trim()) {
+          hljs.highlightElement(block)
+        }
+      })
+    } catch (error) {
+      console.warn('代码高亮失败:', error)
+    }
+  }
+}
+
+// 监听QA历史变化，自动滚动和高亮代码
+watch(QAHistory, async () => {
+  await nextTick()
+  scrollToBottom()
+
+  // 只在非流式状态下进行代码高亮
+  if (!isStreaming.value) {
+    highlightCodeBlocks()
+  }
+})
+
+// 提交问题，流式获取答案
+async function askQuestion() {
+  if (!question.value.trim()) {
+    // 使用现代化的提示方式替代alert
+    const errorDiv = document.createElement('div')
+    errorDiv.className = 'error-toast'
+    errorDiv.textContent = '请输入有效的需求'
+    document.body.appendChild(errorDiv)
+    setTimeout(() => errorDiv.remove(), 3000)
+    return
+  }
+
+  function getSystemPrompt() {
+    if (systemPrompt.value && systemPrompt.value.trim()) {
+      return "<system>" + systemPrompt.value.trim() + "</system>\n"
+    }
+    return ''
+  }
+
+  loading.value = true
+  isStreaming.value = true // 开始流式渲染
+
+  const qa = {
+    question: getSystemPrompt() + "<requirement>" + question.value + "</requirement>",
+    model: selectedModel.value,
+    answer: ''
+  }
+
+  QAHistory.value.push(qa)
+  currentAnswerIndex.value = QAHistory.value.length - 1 // 设置当前流式回答索引
+
+  // 清空输入框并重置高度
+  question.value = ''
+  adjustTextareaHeight()
+
+  // 关闭旧的 SSE 连接
+  if (eventSource) {
+    eventSource.close()
+  }
+
+  try {
+    // 使用 fetch 先 POST，获取流式 EventSource 通道
+    const response = await fetch('/api/chat_start', {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: qa.question,
+        model: selectedModel.value
+      })
+    })
+
+    if (!response.ok) throw new Error('接口请求失败')
+
+    const streamUrl = await response.text()
+
+    eventSource = new EventSource(streamUrl)
+
+    eventSource.onmessage = (event) => {
+      if (event.data === '[DONE]') {
+        loading.value = false
+        isStreaming.value = false // 结束流式渲染
+        eventSource.close()
+
+        // 渲染最终的格式化内容
+        nextTick(() => {
+          highlightCodeBlocks()
+        })
+
+        console.log('流式响应完成')
+        return
+      }
+
+      try {
+        const data = JSON.parse(event.data)
+        if (data.text) {
+          // 逐字追加文本
+          QAHistory.value[currentAnswerIndex.value].answer += data.text
+          console.log('接收到文本:', data.text.substring(0, 20) + '...')
+
+          // 自动滚动到底部
+          nextTick(() => {
+            scrollToBottom()
+          })
+        }
+      } catch (e) {
+        QAHistory.value[currentAnswerIndex.value].answer += event.data
+        console.log('接收到原始数据:', event.data.substring(0, 20) + '...')
+
+        // 自动滚动到底部
+        nextTick(() => {
+          scrollToBottom()
+        })
+      }
+    }
+
+    eventSource.onerror = () => {
+      loading.value = false
+      isStreaming.value = false
+      eventSource.close()
+      QAHistory.value[currentAnswerIndex.value].answer = '连接中断，请重试。'
+      console.error('SSE连接错误')
+    }
+
+    eventSource.addEventListener('end', () => {
+      loading.value = false
+      isStreaming.value = false
+      eventSource.close()
+      console.log('SSE流结束')
+    })
+
+  } catch (error) {
+    loading.value = false
+    isStreaming.value = false
+    QAHistory.value[currentAnswerIndex.value].answer = '请求失败，请检查网络连接后重试。'
+    console.error('API请求错误:', error)
+  }
+}
+
+// 解析生成的代码内容
+function parseGeneratedContent(content) {
+  // 调用 /api/gen_parser 接口
+  fetch('/api/gen_parser', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ content: content })
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('解析结果:', data)
+    // 根据后端返回的结果处理
+    if (data.success) {
+      alert('代码解析成功')
+    } else {
+      alert('代码解析失败: ' + (data.error || '未知错误'))
+    }
+  })
+  .catch(error => {
+    console.error('解析请求失败:', error)
+    alert('请求失败: ' + error.message)
+  })
+}
+
+// 页面初始化时获取模型列表
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/models')
+    const data = await res.json()
+    modelList.value = data.models || [
+      'gpt-oss:20b',
+      'deepseek-r1:8b',
+      'deepseek-r1:32b',
+      'gemma3n:e4b',
+      'llama3.1:8b',
+      'llama2:latest',
+      'gemma2:2b',
+      'gemma3:27b'
+    ]
+
+    if (modelList.value.length > 0) {
+      selectedModel.value = modelList.value[0]
+    }
+  } catch (e) {
+    modelList.value = [
+      'gpt-oss:20b',
+      'deepseek-r1:8b',
+      'deepseek-r1:32b',
+      'gemma3n:e4b',
+      'llama3.1:8b',
+      'llama2:latest',
+      'gemma2:2b',
+      'gemma3:27b'
+    ]
+    selectedModel.value = modelList.value[0]
+  }
+})
+
+// 确保 CSS 变量 --bottom-bar-height 与实际底部栏高度一致，避免 overlap
+function updateBottomBarHeight() {
+  const bar = document.querySelector('.bottom-bar')
+  if (bar) {
+    const h = bar.offsetHeight
+    // 设置在根上，以让 scoped CSS 获取到该变量
+    document.documentElement.style.setProperty('--bottom-bar-height', `${h}px`)
+  }
+}
+
+onMounted(() => {
+  updateBottomBarHeight()
+  window.addEventListener('resize', updateBottomBarHeight)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateBottomBarHeight)
+})
+</script>
+
+<style scoped>
+/* 页面整体样式 - 简洁设计 */
+.codegen-page {
+  min-height: 100vh;
+  width: 100vw;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  position: relative;
+}
+
+.codegen-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(79, 140, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(79, 140, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* 标题样式 - 简约设计 */
+h2 {
+  margin: var(--spacing-xl) auto var(--spacing-lg);
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  position: relative;
+  padding-bottom: var(--spacing-sm);
+  width: 100%;
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 2px;
+}
+
+/* 答案区域样式 - 简洁设计 with fix for scrolling and input area overlap */
+.answer {
+  width: 90%;
+  max-width: 900px;
+  flex: 1;
+  margin: 0 auto var(--spacing-xl);
+  font-size: var(--font-size);
+  min-height: 300px;
+  /* reserve bottom space so fixed input area doesn't overlap content */
+  --bottom-bar-height: 140px;
+  max-height: calc(80vh - var(--bottom-bar-height));
+  /* Fixed height to enable proper scrolling, accounting for input area */
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-lg);
+  /* extra bottom padding to keep messages above the fixed bottom-bar */
+  padding-bottom: calc(var(--spacing-lg) + var(--bottom-bar-height));
+  box-sizing: border-box;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+  /* Ensure space for fixed input area */
+}
+
+.answer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.answer::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+  border-radius: 4px;
+}
+
+.answer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background var(--transition);
+}
+
+.answer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* QA项目样式 - 简约设计 */
+.qa-item {
+  margin-bottom: var(--spacing-lg);
+  opacity: 0;
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+.qa-item:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.qa-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.qa-item:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 消息项样式 - 更简洁 with fix for overlapping */
+.message-item {
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+  align-self: stretch;
+  /* Ensure full width allocation */
+}
+
+.message-item.user {
+  align-items: flex-start;
+}
+
+.message-item.ai {
+  align-items: flex-end;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: #64748b;
+}
+
+.copy-btn, .parse-btn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: #64748b;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-left: var(--spacing-xs);
+}
+
+.copy-btn:hover, .parse-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.button-group {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* 气泡样式 - 简约现代 with fix for overlapping */
+.bubble {
+  display: inline-block;
+  max-width: 100%;
+  padding: var(--spacing);
+  border-radius: var(--border-radius-lg);
+  position: relative;
+  word-wrap: break-word;
+  line-height: 1.6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.2s ease-out;
+  min-width: 200px;
+  /* Ensure minimum width for readability */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.user-bubble {
+  background: #DCF8C6;
+  /* ChatGPT‑style light green for user */
+  border: none;
+  color: #1e40af;
+  border-bottom-right-radius: var(--border-radius-sm);
+  align-self: flex-start;
+  max-width: 85%;
+  /* Limit width to prevent overlapping */
+}
+
+.ai-bubble {
+  background: #FFFFFF;
+  /* Classic chat GPT background */
+  border: none;
+  color: #334155;
+  border-bottom-left-radius: var(--border-radius-sm);
+  align-self: flex-end;
+  max-width: 85%;
+  /* Limit width to prevent overlapping */
+}
+
+/* Answer content styling to fix markdown rendering */
+.answer-content {
+  width: 100%;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* 加载状态样式 */
+.loading {
+  display: inline-block;
+  padding: var(--spacing-sm) var(--spacing);
+  background: var(--warning-color);
+  color: var(--text-white);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 输入区域样式 - 简约设计 */
+.input-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.input-area label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* 输入框样式 - 简约设计 */
+.question-input {
+  width: 100%;
+  padding: var(--spacing-md);
+  font-size: var(--font-size);
+  border-radius: var(--border-radius);
+  border: 1px solid #cbd5e1;
+  background: white;
+  resize: vertical;
+  min-height: 60px;
+  max-height: 200px;
+  font-family: inherit;
+  transition: all var(--transition);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.question-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  transform: translateY(-1px);
+}
+
+.question-input::placeholder {
+  color: #94a3b8;
+  font-style: normal;
+}
+
+/* 模型选择样式 - 简约设计 */
+.model-select {
+  padding: var(--spacing-md);
+  font-size: var(--font-size);
+  border-radius: var(--border-radius);
+  border: 1px solid #cbd5e1;
+  background: white;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-height: 50px;
+}
+
+.model-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  transform: translateY(-1px);
+}
+
+/* 按钮样式 - 简约现代 */
+.submit-btn {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size);
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+  position: relative;
+  overflow: hidden;
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.4);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 加载动画 */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Markdown内容样式优化 - Enhanced for better rendering */
+.answer :deep(.answer-content p) {
+  margin: var(--spacing-sm) 0;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.answer :deep(.answer-content pre) {
+  background: #f1f5f9;
+  border-radius: var(--border-radius);
+  padding: var(--spacing);
+  margin: var(--spacing-sm) 0;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #6366f1;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.answer :deep(.answer-content code) {
+  background: #f8fafc;
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: #475569;
+  overflow-x: auto;
+}
+
+.answer :deep(.answer-content pre code) {
+  background: none;
+  padding: 0;
+  border: none;
+  color: #334155;
+  display: block;
+  white-space: pre-wrap;
+}
+
+.answer :deep(.answer-content h1),
+.answer :deep(.answer-content h2),
+.answer :deep(.answer-content h3),
+.answer :deep(.answer-content h4),
+.answer :deep(.answer-content h5),
+.answer :deep(.answer-content h6) {
+  margin: var(--spacing) 0 var(--spacing-sm);
+  color: #1e293b;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.answer :deep(.answer-content h1) {
+  font-size: var(--font-size-xl);
+}
+
+.answer :deep(.answer-content h2) {
+  font-size: var(--font-size-lg);
+}
+
+.answer :deep(.answer-content h3) {
+  font-size: var(--font-size-base);
+}
+
+.answer :deep(.answer-content ul),
+.answer :deep(.answer-content ol) {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-lg);
+  line-height: 1.6;
+}
+
+.answer :deep(.answer-content li) {
+  margin: var(--spacing-xs) 0;
+  line-height: 1.6;
+}
+
+.answer :deep(.answer-content blockquote) {
+  border-left: 3px solid #6366f1;
+  padding-left: var(--spacing);
+  margin: var(--spacing-sm) 0;
+  font-style: italic;
+  color: #64748b;
+  background: #f8fafc;
+  padding: var(--spacing-sm) var(--spacing);
+  border-radius: var(--border-radius-sm);
+}
+
+.answer :deep(.answer-content table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--spacing-sm) 0;
+  border: 1px solid #e2e8f0;
+  display: block;
+  overflow-x: auto;
+}
+
+.answer :deep(.answer-content th),
+.answer :deep(.answer-content td) {
+  border: 1px solid #e2e8f0;
+  padding: var(--spacing-sm);
+  text-align: left;
+}
+
+.answer :deep(.answer-content th) {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+/* 底部固定容器 - 简约设计 with fix to prevent overlap */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  --bottom-bar-height: 120px;
+  min-height: var(--bottom-bar-height);
+  /* Set minimum height for the input area */
+}
+
+.bottom-bar .bar-row {
+  width: 80%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--spacing);
+}
+
+/* 系统提示切换按钮 */
+.toggle-btn {
+  background: #b0bdca;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-sm) var(--spacing);
+  font-size: var(--font-size-sm);
+  color: #64748b;
+  cursor: pointer;
+  transition: all var(--transition);
+  align-self: flex-start;
+  min-height: 50px;
+}
+
+.toggle-btn:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* 流式文本样式 */
+.streaming-text {
+  width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+  font-family: inherit;
+  font-size: var(--font-size);
+  color: #334155;
+  background: transparent;
+  min-height: 1.2em;
+}
+
+.typing-cursor {
+  color: #6366f1;
+  font-weight: bold;
+  animation: blink 1s infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 流式内容过渡动画 */
+.streaming-text {
+  animation: fadeIn 0.1s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+  padding: var(--spacing-sm);
+  align-items: center;
+}
+
+.loading-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6366f1;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 空状态样式 - 简约现代 */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl) var(--spacing-lg);
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--spacing);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-sm);
+  opacity: 0.5;
+  color: #94a3b8;
+}
+
+.empty-state h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 var(--spacing-xs);
+}
+
+.empty-state p {
+  font-size: var(--font-size);
+  color: #64748b;
+  margin: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .codegen-page {
+    padding: 0;
+  }
+
+  .answer {
+    width: calc(100% - 2 * var(--spacing-lg));
+    margin: 0 auto var(--spacing-lg);
+    padding: var(--spacing);
+  }
+
+  .bottom-bar .bar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bar-row .input-area {
+    gap: var(--spacing-xs);
+  }
+
+  .input-area label {
+    font-size: var(--font-size-sm);
+  }
+
+  h2 {
+    font-size: var(--font-size-xl);
+    margin: var(--spacing-lg) auto var(--spacing);
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-bar {
+    padding: var(--spacing-sm) var(--spacing);
+    --bottom-bar-height: 180px;
+  }
+
+  .answer {
+    padding: var(--spacing-sm);
+  }
+
+  .bubble {
+    padding: var(--spacing-sm);
+  }
+
+  .submit-btn {
+    padding: var(--spacing-sm) var(--spacing);
+  }
+}
+
+/* Chat bubble tails */
+.user-bubble::after,
+.ai-bubble::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.user-bubble::after {
+  right: -6px;
+  top: 12px;
+  border-width: 8px 0 8px 8px;
+  border-color: transparent transparent transparent #DCF8C6;
+}
+
+.ai-bubble::after {
+  left: -6px;
+  top: 12px;
+  border-width: 8px 8px 8px 0;
+  border-color: transparent #FFFFFF transparent transparent;
+}
+
+/* Remove extra borders from bubbles */
+.user-bubble,
+.ai-bubble {
+  box-shadow: none;
+}
+
+/* Increase bubble padding for better readability */
+.bubble {
+  padding: calc(var(--spacing) * 1.5) var(--spacing);
+}
+
+/* Slightly round bubble corners for a softer look */
+.user-bubble,
+.ai-bubble {
+  border-radius: var(--border-radius-lg);
+}
+
+/* Align timestamps to the bottom-right of each bubble */
+.meta {
+  font-size: var(--font-size-xs);
+  color: #9CA3AF;
+  margin-top: 4px;
+}
+
+/* Add a subtle hover effect on bubbles */
+.user-bubble:hover,
+.ai-bubble:hover {
+  filter: brightness(1.02);
+}
+</style>

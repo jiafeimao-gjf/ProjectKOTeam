@@ -8,6 +8,7 @@ import CustomProjectEngine from './components/CustomProjectEngine.vue'
 import SoftwareProjectEngine from './components/SoftwareProjectEngine.vue'
 import HistoryQA from './components/HistoryQA.vue'
 import ImageChat from './components/ImageChat.vue'
+import CodeGen from './pages/CodeGen.vue'
 
 const mode = ref('qna') // 默认问答模式
 </script>
@@ -37,6 +38,7 @@ const mode = ref('qna') // 默认问答模式
         <!-- 其他模式分组 -->
         <div class="mode-group">
           <div class="mode-group-title">其他功能</div>
+          <button :class="{ active: mode === 'codegen' }" @click="mode = 'codegen'">📝 代码生成</button>
           <button :class="{ active: mode === 'imagechat' }" @click="mode = 'imagechat'">🖼️ 图片对话</button>
         </div>
       </div>
@@ -50,6 +52,7 @@ const mode = ref('qna') // 默认问答模式
         <SoftwareProjectEngine v-if="mode === 'softwareproject'" class="fade-in" />
         <HistoryQA v-if="mode === 'history'" class="fade-in" />
         <ImageChat v-if="mode === 'imagechat'" class="fade-in" />
+        <CodeGen v-if="mode === 'codegen'" class="fade-in" />
       </div>
     </div>
   </div>

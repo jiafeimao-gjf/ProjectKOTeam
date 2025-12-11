@@ -10,6 +10,7 @@ from flask import Flask, Response, request
 import ollama
 
 from log.log_utils import logger
+from src.cop_parser import do_code_parser
 from src.llm_caller import ollama_stream, ollama_stream_inner, save_to_his
 
 app = Flask(__name__)
@@ -309,6 +310,13 @@ def get_his_content():
 
     # 返回成功响应，包含操作状态、状态码和文件内容
     return {"msg": "success", "code": 0, "content": content}
+
+
+@app.route('/gen_parser', methods=["POST"])  # 定义API路由，仅接受GET请求
+def gen_parser():
+    gen_result = request.json.get("content")
+    do_code_parser(gen_result, logger)
+    return {"msg": "success", "code": 0}
 
 
 if __name__ == "__main__":

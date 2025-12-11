@@ -10,6 +10,7 @@ import CustomProjectEngine from './components/CustomProjectEngine.vue'
 import SoftwareProjectEngine from './components/SoftwareProjectEngine.vue'
 import HistoryQA from './components/HistoryQA.vue'
 import ImageChat from './components/ImageChat.vue'
+import CodeGen from './pages/CodeGen.vue'
 
 createApp(App)
   .component('QnAPage', QnAPage)
@@ -20,4 +21,5 @@ createApp(App)
   .component('SoftwareProjectEngine', SoftwareProjectEngine)
   .component('HistoryQA', HistoryQA)
   .component('ImageChat', ImageChat)
+  .component('CodeGen', CodeGen)
   .mount('#app')
